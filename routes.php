@@ -75,6 +75,11 @@ $app->group('', function (RouteCollectorProxy $group)
 	$group->get('/shoppinglist/{listId}', '\Grocy\Controllers\StockController:ShoppingListEditForm');
 	$group->get('/shoppinglistsettings', '\Grocy\Controllers\StockController:ShoppingListSettings');
 
+	// Store integrations routes
+	$group->get('/storeintegrations', '\Grocy\Controllers\StoreIntegrationsController:Overview');
+	$group->get('/storeintegration/{integrationId}', '\Grocy\Controllers\StoreIntegrationsController:IntegrationEditForm');
+	$group->get('/storeintegrations/oauth/callback', '\Grocy\Controllers\StoreIntegrationsController:OAuthCallback');
+
 	// Recipe routes
 	$group->get('/recipes', '\Grocy\Controllers\RecipesController:Overview');
 	$group->get('/recipe/{recipeId}', '\Grocy\Controllers\RecipesController:RecipeEditForm');
@@ -205,6 +210,23 @@ $app->group('/api', function (RouteCollectorProxy $group)
 	$group->post('/stock/shoppinglist/clear', '\Grocy\Controllers\StockApiController:ClearShoppingList');
 	$group->post('/stock/shoppinglist/add-product', '\Grocy\Controllers\StockApiController:AddProductToShoppingList');
 	$group->post('/stock/shoppinglist/remove-product', '\Grocy\Controllers\StockApiController:RemoveProductFromShoppingList');
+
+	// Store integrations
+	$group->get('/store-integrations', '\Grocy\Controllers\StoreIntegrationsApiController:GetAll');
+	$group->get('/store-integrations/active', '\Grocy\Controllers\StoreIntegrationsApiController:GetActive');
+	$group->get('/store-integrations/{integrationId}', '\Grocy\Controllers\StoreIntegrationsApiController:GetOne');
+	$group->post('/store-integrations/{integrationId}/send-shopping-list', '\Grocy\Controllers\StoreIntegrationsApiController:SendShoppingList');
+	$group->get('/store-integrations/{integrationId}/auth-url', '\Grocy\Controllers\StoreIntegrationsApiController:GetAuthorizationUrl');
+	$group->post('/store-integrations/{integrationId}/refresh-token', '\Grocy\Controllers\StoreIntegrationsApiController:RefreshToken');
+	$group->post('/store-integrations/{integrationId}/products/{productId}/lookup-metadata', '\Grocy\Controllers\StoreIntegrationsApiController:LookupProductMetadata');
+	$group->get('/products/{productId}/store-metadata', '\Grocy\Controllers\StoreIntegrationsApiController:GetProductMetadata');
+
+	// Store locations
+	$group->post('/store-integrations/{integrationId}/locations/search', '\Grocy\Controllers\StoreIntegrationsApiController:SearchStoreLocations');
+	$group->get('/store-integrations/{integrationId}/locations', '\Grocy\Controllers\StoreIntegrationsApiController:GetStoreLocations');
+	$group->post('/store-integrations/{integrationId}/locations', '\Grocy\Controllers\StoreIntegrationsApiController:SaveStoreLocation');
+	$group->delete('/store-locations/{locationId}', '\Grocy\Controllers\StoreIntegrationsApiController:DeleteStoreLocation');
+	$group->post('/store-locations/{locationId}/set-primary', '\Grocy\Controllers\StoreIntegrationsApiController:SetPrimaryStoreLocation');
 
 	// Recipes
 	$group->post('/recipes/{recipeId}/add-not-fulfilled-products-to-shoppinglist', '\Grocy\Controllers\RecipesApiController:AddNotFulfilledProductsToShoppingList');

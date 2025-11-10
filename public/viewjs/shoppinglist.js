@@ -638,3 +638,52 @@ if ($(window).width() < 768 || !Grocy.FeatureFlags.GROCY_FEATURE_FLAG_STOCK)
 {
 	$("#filter-container").removeClass("border-bottom");
 }
+
+// Send shopping list to store integration
+$(document).on('click', '.send-to-store-button', function(e)
+{
+	e.preventDefault();
+
+	var integrationId = $(e.currentTarget).attr('data-integration-id');
+	var integrationName = $(e.currentTarget).attr('data-integration-name');
+	var storeType = $(e.currentTarget).attr('data-store-type');
+	var shoppingListId = $('#selected-shopping-list').val();
+
+	bootbox.confirm({
+		message: __t('Send this shopping list to %s?', integrationName),
+		closeButton: false,
+		buttons: {
+			confirm: {
+				label: __t('Yes'),
+				className: 'btn-success'
+			},
+			cancel: {
+				label: __t('No'),
+				className: 'btn-danger'
+			}
+		},
+		callback: function(result)
+		{
+			if (result === true)
+			{
+				Grocy.FrontendHelpers.BeginUiBusy();
+
+				Grocy.Api.Post('store-integrations/' + integrationId + '/send-shopping-list', {
+					shopping_list_id: shoppingListId
+				},
+					function(result)
+					{
+						Grocy.FrontendHelpers.EndUiBusy();
+						toastr.success(__t('Shopping list sent successfully to %s', integrationName));
+					},
+					function(xhr)
+					{
+						Grocy.FrontendHelpers.EndUiBusy();
+						console.error(xhr);
+						Grocy.FrontendHelpers.ShowGenericError('Error while sending shopping list to store', xhr.response);
+					}
+				);
+			}
+		}
+	});
+});

@@ -116,6 +116,11 @@ class BaseController
 		return UsersService::getInstance();
 	}
 
+	protected function getStoreIntegrationsService()
+	{
+		return \Grocy\Services\StoreIntegrationsService::getInstance();
+	}
+
 	protected function render($response, $viewName, $data = [])
 	{
 		$container = $this->AppContainer;

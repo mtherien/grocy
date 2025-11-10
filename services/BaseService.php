@@ -76,4 +76,9 @@ class BaseService
 	{
 		return ApplicationService::getInstance();
 	}
+
+	protected function getStoreIntegrationsService()
+	{
+		return StoreIntegrationsService::getInstance();
+	}
 }

@@ -418,6 +418,20 @@ class StockController extends BaseController
 			$listId = $request->getQueryParams()['list'];
 		}
 
+		// Get active store integrations if feature is enabled
+		$storeIntegrations = [];
+		if (defined('GROCY_FEATURE_FLAG_STORE_INTEGRATIONS') && GROCY_FEATURE_FLAG_STORE_INTEGRATIONS)
+		{
+			try
+			{
+				$storeIntegrations = $this->getStoreIntegrationsService()->GetActive();
+			}
+			catch (\Exception $ex)
+			{
+				// Store integrations table might not exist yet
+			}
+		}
+
 		return $this->renderPage($response, 'shoppinglist', [
 			'listItems' => $this->getDatabase()->uihelper_shopping_list()->where('shopping_list_id = :1', $listId)->orderBy('product_name', 'COLLATE NOCASE'),
 			'products' => $this->getDatabase()->products()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
@@ -431,7 +445,8 @@ class StockController extends BaseController
 			'productGroupUserfields' => $this->getUserfieldsService()->GetFields('product_groups'),
 			'productGroupUserfieldValues' => $this->getUserfieldsService()->GetAllValues('product_groups'),
 			'userfields' => $this->getUserfieldsService()->GetFields('shopping_list'),
-			'userfieldValues' => $this->getUserfieldsService()->GetAllValues('shopping_list')
+			'userfieldValues' => $this->getUserfieldsService()->GetAllValues('shopping_list'),
+			'storeIntegrations' => $storeIntegrations
 		]);
 	}
 

@@ -311,6 +311,104 @@ $(document).on("click", ".productcard-trigger", function(e)
 	if (productId != "")
 	{
 		Grocy.Components.ProductCard.Refresh(productId);
+		Grocy.Components.ProductCard.LoadStoreMetadata(productId);
 		$("#productcard-modal").modal("show");
 	}
+});
+
+// Store integration metadata
+Grocy.Components.ProductCard.LoadStoreMetadata = function(productId)
+{
+	if (!Grocy.FeatureFlags.GROCY_FEATURE_FLAG_STORE_INTEGRATIONS)
+	{
+		return;
+	}
+
+	Grocy.Api.Get('products/' + productId + '/store-metadata',
+		function(metadata)
+		{
+			if (metadata && (metadata.aisle || metadata.department || metadata.shelf))
+			{
+				var locationText = [];
+				if (metadata.department)
+				{
+					locationText.push('<strong>' + __t('Department') + ':</strong> ' + metadata.department);
+				}
+				if (metadata.aisle)
+				{
+					locationText.push('<strong>' + __t('Aisle') + ':</strong> ' + metadata.aisle);
+				}
+				if (metadata.shelf)
+				{
+					locationText.push('<strong>' + __t('Shelf') + ':</strong> ' + metadata.shelf);
+				}
+				if (metadata.availability)
+				{
+					locationText.push('<strong>' + __t('Availability') + ':</strong> ' + metadata.availability);
+				}
+				if (metadata.last_updated)
+				{
+					locationText.push('<span class="text-muted">' + __t('Updated') + ': ' + metadata.last_updated.substring(0, 10) + '</span>');
+				}
+
+				$('#productcard-store-location-info').html(locationText.join('<br>'));
+				$('#productcard-store-location-wrapper').removeClass('d-none');
+			}
+			else
+			{
+				$('#productcard-store-location-wrapper').addClass('d-none');
+			}
+
+			// Store product ID for lookup button
+			$('#productcard-lookup-store-location-button').data('product-id', productId);
+		},
+		function(xhr)
+		{
+			// No metadata found or error
+			$('#productcard-store-location-wrapper').addClass('d-none');
+		}
+	);
+};
+
+$(document).on('click', '#productcard-lookup-store-location-button', function(e)
+{
+	e.preventDefault();
+
+	var productId = $(e.currentTarget).data('product-id');
+
+	// Get first active store integration
+	Grocy.Api.Get('store-integrations/active',
+		function(integrations)
+		{
+			if (!integrations || integrations.length === 0)
+			{
+				toastr.error(__t('No active store integrations found. Please configure one first.'));
+				return;
+			}
+
+			var integrationId = integrations[0].id;
+
+			Grocy.FrontendHelpers.BeginUiBusy();
+
+			Grocy.Api.Post('store-integrations/' + integrationId + '/products/' + productId + '/lookup-metadata', {},
+				function(metadata)
+				{
+					Grocy.FrontendHelpers.EndUiBusy();
+					toastr.success(__t('Store location updated successfully'));
+					Grocy.Components.ProductCard.LoadStoreMetadata(productId);
+				},
+				function(xhr)
+				{
+					Grocy.FrontendHelpers.EndUiBusy();
+					console.error(xhr);
+					Grocy.FrontendHelpers.ShowGenericError('Error while looking up store location', xhr.response);
+				}
+			);
+		},
+		function(xhr)
+		{
+			console.error(xhr);
+			toastr.error(__t('Error loading store integrations'));
+		}
+	);
 });

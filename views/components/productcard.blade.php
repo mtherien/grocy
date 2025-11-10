@@ -79,6 +79,24 @@
 						@endif
 
 						@if(GROCY_FEATURE_FLAG_STOCK_LOCATION_TRACKING)<strong>{{ $__t('Default location') }}:</strong> <span id="productcard-product-location"></span><br>@endif
+
+						@if(defined('GROCY_FEATURE_FLAG_STORE_INTEGRATIONS') && GROCY_FEATURE_FLAG_STORE_INTEGRATIONS)
+						<div id="productcard-store-location-wrapper"
+							class="d-none mb-2">
+							<hr class="my-2">
+							<h6 class="mb-1">{{ $__t('Store location') }}</h6>
+							<span id="productcard-store-location-info"
+								class="text-muted small"></span>
+							<button id="productcard-lookup-store-location-button"
+								class="btn btn-sm btn-outline-primary mt-1"
+								data-toggle="tooltip"
+								title="{{ $__t('Refresh store location from integration') }}">
+								<i class="fa-solid fa-sync"></i> {{ $__t('Lookup location') }}
+							</button>
+							<hr class="my-2">
+						</div>
+						@endif
+
 						<strong>{{ $__t('Last purchased') }}:</strong> <span id="productcard-product-last-purchased"></span> <time id="productcard-product-last-purchased-timeago"
 							class="timeago timeago-contextual"></time><br>
 						<strong>{{ $__t('Last used') }}:</strong> <span id="productcard-product-last-used"></span> <time id="productcard-product-last-used-timeago"

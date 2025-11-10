@@ -151,6 +151,32 @@ $listItem->last_price_total = $listItem->price * $listItem->amount;
 					</div>
 				</div>
 				@endif
+
+				@if(defined('GROCY_FEATURE_FLAG_STORE_INTEGRATIONS') && GROCY_FEATURE_FLAG_STORE_INTEGRATIONS && count($storeIntegrations) > 0)
+				<div class="dropdown d-inline">
+					<a class="btn btn-sm btn-outline-primary responsive-button mb-1 dropdown-toggle @if($listItems->count() == 0) disabled @endif"
+						href="#"
+						data-toggle="dropdown">
+						{{ $__t('Send to store') }}
+					</a>
+					<div class="dropdown-menu text-right">
+						@foreach($storeIntegrations as $integration)
+						<a class="dropdown-item send-to-store-button"
+							href="#"
+							data-integration-id="{{ $integration->id }}"
+							data-integration-name="{{ $integration->name }}"
+							data-store-type="{{ $integration->store_type }}">
+							{{ $integration->name }} ({{ ucfirst($integration->store_type) }})
+						</a>
+						@endforeach
+						<div class="dropdown-divider"></div>
+						<a class="dropdown-item"
+							href="{{ $U('/storeintegrations') }}">
+							{{ $__t('Manage integrations') }}
+						</a>
+					</div>
+				</div>
+				@endif
 			</div>
 		</div>
 	</div>
