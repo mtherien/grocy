@@ -669,6 +669,10 @@
 						<a class="dropdown-item discrete-link"
 							href="{{ $U('/manageapikeys') }}"><i class="fa-solid fa-fw fa-handshake"></i>&nbsp;{{ $__t('Manage API keys') }}</a>
 						@endif
+						@if(defined('GROCY_FEATURE_FLAG_STORE_INTEGRATIONS') && GROCY_FEATURE_FLAG_STORE_INTEGRATIONS)
+						<a class="dropdown-item discrete-link"
+							href="{{ $U('/storeintegrations') }}"><i class="fa-solid fa-fw fa-store"></i>&nbsp;{{ $__t('Store integrations') }}</a>
+						@endif
 						<a class="dropdown-item discrete-link"
 							target="_blank"
 							href="{{ $U('/api') }}"><i class="fa-solid fa-fw fa-book"></i>&nbsp;{{ $__t('REST API browser') }}</a>
