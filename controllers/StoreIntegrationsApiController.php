@@ -42,9 +42,12 @@ class StoreIntegrationsApiController extends BaseApiController
 				return $this->GenericErrorResponse($response, 'shopping_list_id is required');
 			}
 
+			$locationId = $requestBody['location_id'] ?? null;
+
 			$result = $this->getStoreIntegrationsService()->SendShoppingListToStore(
 				$args['integrationId'],
-				$requestBody['shopping_list_id']
+				$requestBody['shopping_list_id'],
+				$locationId
 			);
 
 			return $this->ApiResponse($response, $result);

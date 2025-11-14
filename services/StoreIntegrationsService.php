@@ -103,7 +103,7 @@ class StoreIntegrationsService extends BaseService
 		return $now >= $expiresAt;
 	}
 
-	public function SendShoppingListToStore($integrationId, $shoppingListId)
+	public function SendShoppingListToStore($integrationId, $shoppingListId, $locationId = null)
 	{
 		$integration = $this->GetById($integrationId);
 
@@ -122,7 +122,7 @@ class StoreIntegrationsService extends BaseService
 		}
 
 		// Send the shopping list to the store
-		return $storeService->SendShoppingList($integrationId, $shoppingListId);
+		return $storeService->SendShoppingList($integrationId, $shoppingListId, $locationId);
 	}
 
 	public function LookupProductMetadata($integrationId, $productId)

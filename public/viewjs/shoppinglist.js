@@ -647,10 +647,14 @@ $(document).on('click', '.send-to-store-button', function(e)
 	var integrationId = $(e.currentTarget).attr('data-integration-id');
 	var integrationName = $(e.currentTarget).attr('data-integration-name');
 	var storeType = $(e.currentTarget).attr('data-store-type');
+	var locationId = $(e.currentTarget).attr('data-location-id');
+	var locationName = $(e.currentTarget).attr('data-location-name');
 	var shoppingListId = $('#selected-shopping-list').val();
 
+	var displayName = locationName ? locationName + ' (' + integrationName + ')' : integrationName;
+
 	bootbox.confirm({
-		message: __t('Send this shopping list to %s?', integrationName),
+		message: __t('Send this shopping list to %s?', displayName),
 		closeButton: false,
 		buttons: {
 			confirm: {
@@ -668,13 +672,20 @@ $(document).on('click', '.send-to-store-button', function(e)
 			{
 				Grocy.FrontendHelpers.BeginUiBusy();
 
-				Grocy.Api.Post('store-integrations/' + integrationId + '/send-shopping-list', {
+				var requestData = {
 					shopping_list_id: shoppingListId
-				},
+				};
+
+				if (locationId)
+				{
+					requestData.location_id = locationId;
+				}
+
+				Grocy.Api.Post('store-integrations/' + integrationId + '/send-shopping-list', requestData,
 					function(result)
 					{
 						Grocy.FrontendHelpers.EndUiBusy();
-						toastr.success(__t('Shopping list sent successfully to %s', integrationName));
+						toastr.success(__t('Shopping list sent successfully to %s', displayName));
 					},
 					function(xhr)
 					{

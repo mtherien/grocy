@@ -315,6 +315,9 @@ msgstr ""
 msgid "Manage API keys"
 msgstr ""
 
+msgid "Store integrations"
+msgstr ""
+
 msgid "REST API browser"
 msgstr ""
 
@@ -2577,4 +2580,13 @@ msgid "Store location added"
 msgstr ""
 
 msgid "Set Primary"
+msgstr ""
+
+msgid "Primary"
+msgstr ""
+
+msgid "Send to store"
+msgstr ""
+
+msgid "Manage integrations"
 msgstr ""

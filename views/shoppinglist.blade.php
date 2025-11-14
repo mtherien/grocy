@@ -99,14 +99,36 @@ $listItem->last_price_total = $listItem->price * $listItem->amount;
 						<div class="dropdown-divider"></div>
 						<h6 class="dropdown-header">{{ $__t('Send to store') }}</h6>
 						@foreach($storeIntegrations as $integration)
-						<a class="dropdown-item send-to-store-button @if($listItems->count() == 0) disabled @endif"
-							href="#"
-							data-integration-id="{{ $integration->id }}"
-							data-integration-name="{{ $integration->name }}"
-							data-store-type="{{ $integration->store_type }}">
-							{{ $integration->name }} ({{ ucfirst($integration->store_type) }})
-						</a>
+							@php
+								$integrationLocations = array_filter($storeLocations, function($loc) use ($integration) {
+									return $loc->store_integration_id == $integration->id;
+								});
+							@endphp
+							@if(count($integrationLocations) > 0)
+								<h6 class="dropdown-header pl-4"><small>{{ $integration->name }}</small></h6>
+								@foreach($integrationLocations as $location)
+								<a class="dropdown-item send-to-store-button pl-5 @if($listItems->count() == 0) disabled @endif"
+									href="#"
+									data-integration-id="{{ $integration->id }}"
+									data-integration-name="{{ $integration->name }}"
+									data-store-type="{{ $integration->store_type }}"
+									data-location-id="{{ $location->id }}"
+									data-location-name="{{ $location->name }}">
+									{{ $location->name }}@if($location->is_primary) <span class="badge badge-primary ml-1">{{ $__t('Primary') }}</span>@endif
+									@if($location->city), {{ $location->city }}@endif
+								</a>
+								@endforeach
+							@else
+								<a class="dropdown-item send-to-store-button @if($listItems->count() == 0) disabled @endif"
+									href="#"
+									data-integration-id="{{ $integration->id }}"
+									data-integration-name="{{ $integration->name }}"
+									data-store-type="{{ $integration->store_type }}">
+									{{ $integration->name }} ({{ ucfirst($integration->store_type) }})
+								</a>
+							@endif
 						@endforeach
+						<div class="dropdown-divider"></div>
 						<a class="dropdown-item"
 							href="{{ $U('/storeintegrations') }}">
 							{{ $__t('Manage integrations') }}

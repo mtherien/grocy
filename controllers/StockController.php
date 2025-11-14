@@ -420,11 +420,22 @@ class StockController extends BaseController
 
 		// Get active store integrations if feature is enabled
 		$storeIntegrations = [];
+		$storeLocations = [];
 		if (defined('GROCY_FEATURE_FLAG_STORE_INTEGRATIONS') && GROCY_FEATURE_FLAG_STORE_INTEGRATIONS)
 		{
 			try
 			{
 				$storeIntegrations = $this->getStoreIntegrationsService()->GetActive();
+
+				// Get store locations for each integration
+				foreach ($storeIntegrations as $integration)
+				{
+					$locations = $this->getStoreIntegrationsService()->GetStoreLocations($integration->id);
+					foreach ($locations as $location)
+					{
+						$storeLocations[] = $location;
+					}
+				}
 			}
 			catch (\Exception $ex)
 			{
@@ -446,7 +457,8 @@ class StockController extends BaseController
 			'productGroupUserfieldValues' => $this->getUserfieldsService()->GetAllValues('product_groups'),
 			'userfields' => $this->getUserfieldsService()->GetFields('shopping_list'),
 			'userfieldValues' => $this->getUserfieldsService()->GetAllValues('shopping_list'),
-			'storeIntegrations' => $storeIntegrations
+			'storeIntegrations' => $storeIntegrations,
+			'storeLocations' => $storeLocations
 		]);
 	}
 

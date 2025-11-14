@@ -90,10 +90,11 @@ abstract class BaseStoreIntegrationPlugin
 	 *
 	 * @param int $integrationId The integration ID
 	 * @param int $shoppingListId The Grocy shopping list ID
+	 * @param int|null $locationId The specific store location ID (optional, uses primary if not specified)
 	 * @return array Response data from the store API
 	 * @throws \Exception If send fails, integration not authenticated, or no store location configured
 	 */
-	abstract public function SendShoppingList($integrationId, $shoppingListId);
+	abstract public function SendShoppingList($integrationId, $shoppingListId, $locationId = null);
 
 	/**
 	 * Lookup product metadata (aisle, price, availability) from the store
