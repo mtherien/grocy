@@ -210,7 +210,7 @@ function displayStoreSearchResults(results)
 			html += '<p class="mb-0 small text-muted">' + store.phone + '</p>';
 		}
 		html += '</div>';
-		html += '<button class="btn btn-sm btn-primary add-store-location-button" data-store-data=\'' + JSON.stringify(store) + '\'>' + __t('Add') + '</button>';
+		html += '<button type="button" class="btn btn-sm btn-primary add-store-location-button" data-store-data="' + btoa(JSON.stringify(store)) + '">' + __t('Add') + '</button>';
 		html += '</div>';
 		html += '</div>';
 	});
@@ -224,7 +224,7 @@ $(document).on('click', '.add-store-location-button', function(e)
 {
 	e.preventDefault();
 
-	var storeData = JSON.parse($(e.currentTarget).attr('data-store-data'));
+	var storeData = JSON.parse(atob($(e.currentTarget).attr('data-store-data')));
 	var isPrimary = $('#saved-stores-list').children('.list-group-item').length === 0; // First store is primary
 
 	Grocy.FrontendHelpers.BeginUiBusy();
@@ -279,9 +279,9 @@ function loadSavedStoreLocations()
 				html += '<div class="btn-group-vertical btn-group-sm">';
 				if (location.is_primary != 1)
 				{
-					html += '<button class="btn btn-sm btn-outline-secondary set-primary-button" data-location-id="' + location.id + '">' + __t('Set Primary') + '</button>';
+					html += '<button type="button" class="btn btn-sm btn-outline-secondary set-primary-button" data-location-id="' + location.id + '">' + __t('Set Primary') + '</button>';
 				}
-				html += '<button class="btn btn-sm btn-outline-danger delete-location-button" data-location-id="' + location.id + '">' + __t('Delete') + '</button>';
+				html += '<button type="button" class="btn btn-sm btn-outline-danger delete-location-button" data-location-id="' + location.id + '">' + __t('Delete') + '</button>';
 				html += '</div>';
 				html += '</div>';
 				html += '</div>';

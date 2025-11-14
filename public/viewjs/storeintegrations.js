@@ -1,3 +1,9 @@
+// Destroy existing DataTable instance if it exists
+if ($.fn.DataTable.isDataTable('#storeintegrations-table'))
+{
+	$('#storeintegrations-table').DataTable().destroy();
+}
+
 var storeIntegrationsTable = $('#storeintegrations-table').DataTable({
 	'order': [[1, 'asc']],
 	'columnDefs': [
@@ -6,7 +12,7 @@ var storeIntegrationsTable = $('#storeintegrations-table').DataTable({
 });
 
 $('#storeintegrations-table tbody').removeClass('d-none');
-Grocy.FrontendHelpers.InitDataTable(storeIntegrationsTable);
+storeIntegrationsTable.columns.adjust().draw();
 
 $(document).on('click', '.integration-delete-button', function(e)
 {
