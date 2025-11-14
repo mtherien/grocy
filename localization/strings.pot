@@ -2470,3 +2470,111 @@ msgstr ""
 
 msgid "List actions"
 msgstr ""
+
+msgid "Store location"
+msgstr ""
+
+msgid "Refresh store location from integration"
+msgstr ""
+
+msgid "Lookup location"
+msgstr ""
+
+msgid "Store Integrations"
+msgstr ""
+
+msgid "Add integration"
+msgstr ""
+
+msgid "Store Type"
+msgstr ""
+
+msgid "Authenticated"
+msgstr ""
+
+msgid "Create store integration"
+msgstr ""
+
+msgid "Please select..."
+msgstr ""
+
+msgid "A store type is required"
+msgstr ""
+
+msgid "Edit store integration"
+msgstr ""
+
+msgid "Authentication Status"
+msgstr ""
+
+msgid "Not authenticated"
+msgstr ""
+
+msgid "Authenticate with Kroger"
+msgstr ""
+
+msgid "Store Locations"
+msgstr ""
+
+msgid "Search and save your Kroger store locations. The primary location will be used for product lookups and pricing."
+msgstr ""
+
+msgid "Search by Zip Code"
+msgstr ""
+
+msgid "Enter zip code"
+msgstr ""
+
+msgid "Search Results"
+msgstr ""
+
+msgid "Saved Locations"
+msgstr ""
+
+msgid "No locations saved yet. Search and add a location above."
+msgstr ""
+
+msgid "Information"
+msgstr ""
+
+msgid "This integration allows you to send shopping lists directly to your Kroger cart."
+msgstr ""
+
+msgid "Authenticate with your Kroger account"
+msgstr ""
+
+msgid "Products will be matched by barcode (UPC) or name"
+msgstr ""
+
+msgid "Matched products will be added to your Kroger cart"
+msgstr ""
+
+msgid "Error while searching for stores"
+msgstr ""
+
+msgid "Are you sure to delete store integration \"%s\"?"
+msgstr ""
+
+msgid "Store Integration Authentication"
+msgstr ""
+
+msgid "Success!"
+msgstr ""
+
+msgid "Your store integration \"%s\" has been successfully authenticated."
+msgstr ""
+
+msgid "You can now close this window and return to the settings page."
+msgstr ""
+
+msgid "Go to Store Integrations"
+msgstr ""
+
+msgid "Error while adding store location"
+msgstr ""
+
+msgid "Store location added"
+msgstr ""
+
+msgid "Set Primary"
+msgstr ""
