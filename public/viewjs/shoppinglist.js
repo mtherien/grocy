@@ -698,3 +698,146 @@ $(document).on('click', '.send-to-store-button', function(e)
 		}
 	});
 });
+
+// Store product search functionality
+$('#store-search-button').on('click', function()
+{
+	var integrationId = $('#store-search-integration').val();
+	var searchTerm = $('#store-search-term').val();
+	var locationId = $('#store-search-integration option:selected').attr('data-location-id');
+
+	if (!integrationId)
+	{
+		toastr.error(__t('Please select a store'));
+		return;
+	}
+
+	if (!searchTerm || searchTerm.trim() === '')
+	{
+		toastr.error(__t('Please enter a search term'));
+		return;
+	}
+
+	$('#store-search-results').addClass('d-none');
+	$('#store-search-error').addClass('d-none');
+	$('#store-search-loading').removeClass('d-none');
+
+	var requestData = {
+		search_term: searchTerm
+	};
+
+	if (locationId)
+	{
+		requestData.location_id = locationId;
+	}
+
+	Grocy.Api.Post('store-integrations/' + integrationId + '/products/search', requestData,
+		function(result)
+		{
+			$('#store-search-loading').addClass('d-none');
+
+			if (!result || result.length === 0)
+			{
+				$('#store-search-error').removeClass('d-none').text(__t('No products found'));
+				return;
+			}
+
+			var resultsHtml = '';
+			result.forEach(function(product)
+			{
+				var imageHtml = product.imageUrl ? '<img src="' + product.imageUrl + '" class="mr-2" style="width: 50px; height: 50px; object-fit: contain;">' : '<div class="mr-2" style="width: 50px; height: 50px;"></div>';
+				var priceHtml = product.price ? '<span class="badge badge-success">' + product.price + '</span>' : '';
+				var sizeHtml = product.size ? '<small class="text-muted">' + product.size + '</small>' : '';
+
+				resultsHtml += '<a href="#" class="list-group-item list-group-item-action store-product-item" ' +
+					'data-product-id="' + product.productId + '" ' +
+					'data-product-name="' + product.name + '" ' +
+					'data-product-brand="' + (product.brand || '') + '" ' +
+					'data-product-upc="' + (product.upc || '') + '">' +
+					'<div class="d-flex align-items-center">' +
+					imageHtml +
+					'<div class="flex-grow-1">' +
+					'<div><strong>' + product.name + '</strong></div>' +
+					'<div>' + (product.brand ? '<span class="text-muted">' + product.brand + '</span> ' : '') + sizeHtml + '</div>' +
+					'</div>' +
+					'<div class="ml-2">' + priceHtml + '</div>' +
+					'</div>' +
+					'</a>';
+			});
+
+			$('#store-search-results-list').html(resultsHtml);
+			$('#store-search-results').removeClass('d-none');
+		},
+		function(xhr)
+		{
+			$('#store-search-loading').addClass('d-none');
+			$('#store-search-error').removeClass('d-none').text(__t('Error searching products: ') + (xhr.responseJSON?.error_message || xhr.statusText));
+		}
+	);
+});
+
+// Handle search on Enter key
+$('#store-search-term').on('keypress', function(e)
+{
+	if (e.which === 13)
+	{
+		e.preventDefault();
+		$('#store-search-button').click();
+	}
+});
+
+// Handle adding product from search results
+$(document).on('click', '.store-product-item', function(e)
+{
+	e.preventDefault();
+
+	var productName = $(this).attr('data-product-name');
+	var productBrand = $(this).attr('data-product-brand');
+	var productUpc = $(this).attr('data-product-upc');
+	var shoppingListId = $('#selected-shopping-list').val();
+
+	var note = productName;
+	if (productBrand)
+	{
+		note = productBrand + ' - ' + productName;
+	}
+
+	bootbox.confirm({
+		message: __t('Add "%s" to your shopping list?', note),
+		closeButton: false,
+		buttons: {
+			confirm: {
+				label: __t('Yes'),
+				className: 'btn-success'
+			},
+			cancel: {
+				label: __t('No'),
+				className: 'btn-danger'
+			}
+		},
+		callback: function(result)
+		{
+			if (result === true)
+			{
+				Grocy.Api.Post('stock/shoppinglist/add-product', {
+					product_id: null,
+					list_id: shoppingListId,
+					product_amount: 1,
+					note: note
+				},
+					function(result)
+					{
+						toastr.success(__t('Product added to shopping list'));
+						$('#store-product-search-modal').modal('hide');
+						window.location.reload();
+					},
+					function(xhr)
+					{
+						console.error(xhr);
+						Grocy.FrontendHelpers.ShowGenericError('Error while adding product to shopping list', xhr.response);
+					}
+				);
+			}
+		}
+	});
+});

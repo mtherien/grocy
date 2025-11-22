@@ -2588,5 +2588,41 @@ msgstr ""
 msgid "Send to store"
 msgstr ""
 
+msgid "Add from store"
+msgstr ""
+
+msgid "Select a store"
+msgstr ""
+
+msgid "Enter product name or barcode"
+msgstr ""
+
+msgid "Results"
+msgstr ""
+
+msgid "Searching..."
+msgstr ""
+
+msgid "Please select a store"
+msgstr ""
+
+msgid "Please enter a search term"
+msgstr ""
+
+msgid "No products found"
+msgstr ""
+
+msgid "Error searching products: "
+msgstr ""
+
+msgid "Add \"%s\" to your shopping list?"
+msgstr ""
+
+msgid "Product added to shopping list"
+msgstr ""
+
+msgid "Error while adding product to shopping list"
+msgstr ""
+
 msgid "Manage integrations"
 msgstr ""

@@ -249,6 +249,28 @@ class StoreIntegrationsService extends BaseService
 		return true;
 	}
 
+	public function SearchProducts($integrationId, $searchTerm, $locationId = null)
+	{
+		$integration = $this->GetById($integrationId);
+
+		if (!$integration->active)
+		{
+			throw new \Exception('Store integration is not active');
+		}
+
+		// Get the appropriate store service based on store_type
+		$storeService = $this->getStoreService($integration->store_type);
+
+		// Refresh token if expired
+		if ($this->IsTokenExpired($integrationId))
+		{
+			$storeService->RefreshToken($integrationId);
+		}
+
+		// Search for products
+		return $storeService->SearchProducts($integrationId, $searchTerm, $locationId);
+	}
+
 	private $loadedPlugins = [];
 
 	/**

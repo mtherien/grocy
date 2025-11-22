@@ -66,6 +66,9 @@ Setting('BASE_URL', '/');
 // The plugin to use for external barcode lookups,
 // must be the filename (folder "/plugins" for built-in plugins or "/data/plugins" for user plugins) without the .php extension,
 // see /plugins/DemoBarcodeLookupPlugin.php for a commented example implementation
+// Available built-in plugins:
+//   - 'OpenFoodFactsBarcodeLookupPlugin' - Uses Open Food Facts database (no API key needed)
+//   - 'KrogerBarcodeLookupPlugin' - Uses Kroger API (requires KROGER_CLIENT_ID and KROGER_CLIENT_SECRET)
 // Leave empty to disable external barcode lookups
 Setting('STOCK_BARCODE_LOOKUP_PLUGIN', 'OpenFoodFactsBarcodeLookupPlugin');
 
@@ -138,6 +141,7 @@ Setting('FEATURE_FLAG_BATTERIES', true);
 Setting('FEATURE_FLAG_EQUIPMENT', true);
 Setting('FEATURE_FLAG_CALENDAR', true);
 Setting('FEATURE_FLAG_LABEL_PRINTER', false);
+Setting('FEATURE_FLAG_STORE_INTEGRATIONS', true);
 
 // Sub feature flags
 Setting('FEATURE_FLAG_STOCK_PRICE_TRACKING', true);
@@ -227,3 +231,8 @@ DefaultUserSetting('calendar_color_tasks', '#28a745'); // The event color (hex c
 DefaultUserSetting('calendar_color_chores', '#ffc107'); // The event color (hex code) for due chores
 DefaultUserSetting('calendar_color_batteries', '#17a2b8'); // The event color (hex code) for due battery charge cycles
 DefaultUserSetting('calendar_color_meal_plan', '#6c757d'); // The event color (hex code) for meal plan items
+
+// Store Integrations settings
+// Kroger API credentials - Get these from https://developer.kroger.com/
+Setting('KROGER_CLIENT_ID', ''); // Your Kroger API client ID
+Setting('KROGER_CLIENT_SECRET', ''); // Your Kroger API client secret

@@ -155,6 +155,14 @@ $listItem->last_price_total = $listItem->price * $listItem->amount;
 					href="{{ $U('/shoppinglistitem/new?embedded&list=' . $selectedShoppingListId) }}">
 					{{ $__t('Add item') }}
 				</a>
+				@if(defined('GROCY_FEATURE_FLAG_STORE_INTEGRATIONS') && GROCY_FEATURE_FLAG_STORE_INTEGRATIONS && !empty($storeIntegrations) && iterator_to_array($storeIntegrations))
+				<button class="btn btn-outline-primary responsive-button btn-sm mb-1 d-none d-md-inline-block"
+					id="add-from-store-button"
+					data-toggle="modal"
+					data-target="#store-product-search-modal">
+					{{ $__t('Add from store') }}
+				</button>
+				@endif
 				<div class="btn-group">
 					<a id="clear-shopping-list"
 						class="btn btn-outline-danger btn-sm mb-1 responsive-button @if($listItems->count() == 0) disabled @endif"
@@ -493,6 +501,91 @@ $listItem->last_price_total = $listItem->price * $listItem->amount;
 		<div>
 			<h5>{{ $__t('Notes') }}</h5>
 			<p id="description-for-print"></p>
+		</div>
+	</div>
+</div>
+
+<!-- Store Product Search Modal -->
+<div class="modal fade"
+	id="store-product-search-modal"
+	tabindex="-1">
+	<div class="modal-dialog modal-lg">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">{{ $__t('Add from store') }}</h5>
+				<button type="button"
+					class="close"
+					data-dismiss="modal">
+					<span>&times;</span>
+				</button>
+			</div>
+			<div class="modal-body">
+				<div class="form-group">
+					<label for="store-search-integration">{{ $__t('Store') }}</label>
+					<select class="form-control"
+						id="store-search-integration">
+						<option value="">{{ $__t('Select a store') }}</option>
+						@foreach($storeIntegrations as $integration)
+							@php
+								$integrationLocations = array_filter($storeLocations, function($loc) use ($integration) {
+									return $loc->store_integration_id == $integration->id;
+								});
+							@endphp
+							@if(count($integrationLocations) > 0)
+								@foreach($integrationLocations as $location)
+								<option value="{{ $integration->id }}"
+									data-location-id="{{ $location->id }}"
+									data-integration-name="{{ $integration->name }}"
+									data-location-name="{{ $location->name }}">
+									{{ $integration->name }} - {{ $location->name }}@if($location->city), {{ $location->city }}@endif
+								</option>
+								@endforeach
+							@else
+								<option value="{{ $integration->id }}"
+									data-integration-name="{{ $integration->name }}">
+									{{ $integration->name }} ({{ ucfirst($integration->store_type) }})
+								</option>
+							@endif
+						@endforeach
+					</select>
+				</div>
+				<div class="form-group">
+					<label for="store-search-term">{{ $__t('Search') }}</label>
+					<div class="input-group">
+						<input type="text"
+							class="form-control"
+							id="store-search-term"
+							placeholder="{{ $__t('Enter product name or barcode') }}">
+						<div class="input-group-append">
+							<button class="btn btn-primary"
+								id="store-search-button"
+								type="button">
+								<i class="fa-solid fa-search"></i> {{ $__t('Search') }}
+							</button>
+						</div>
+					</div>
+				</div>
+				<div id="store-search-results"
+					class="d-none">
+					<h6>{{ $__t('Results') }}</h6>
+					<div id="store-search-results-list"
+						class="list-group"
+						style="max-height: 400px; overflow-y: auto;">
+					</div>
+				</div>
+				<div id="store-search-loading"
+					class="text-center d-none">
+					<i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+					<p>{{ $__t('Searching...') }}</p>
+				</div>
+				<div id="store-search-error"
+					class="alert alert-danger d-none"></div>
+			</div>
+			<div class="modal-footer">
+				<button type="button"
+					class="btn btn-secondary"
+					data-dismiss="modal">{{ $__t('Close') }}</button>
+			</div>
 		</div>
 	</div>
 </div>

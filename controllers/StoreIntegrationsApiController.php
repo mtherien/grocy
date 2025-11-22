@@ -217,4 +217,31 @@ class StoreIntegrationsApiController extends BaseApiController
 			return $this->GenericErrorResponse($response, $ex->getMessage());
 		}
 	}
+
+	public function SearchProducts(Request $request, Response $response, array $args)
+	{
+		try
+		{
+			$requestBody = $this->GetParsedAndFilteredRequestBody($request);
+			$searchTerm = $requestBody['search_term'] ?? null;
+			$locationId = $requestBody['location_id'] ?? null;
+
+			if (empty($searchTerm))
+			{
+				return $this->GenericErrorResponse($response, 'search_term is required');
+			}
+
+			$products = $this->getStoreIntegrationsService()->SearchProducts(
+				$args['integrationId'],
+				$searchTerm,
+				$locationId
+			);
+
+			return $this->ApiResponse($response, $products);
+		}
+		catch (\Exception $ex)
+		{
+			return $this->GenericErrorResponse($response, $ex->getMessage());
+		}
+	}
 }

@@ -5907,7 +5907,10 @@
 					"recipes_pos_resolved",
 					"battery_charge_cycles",
 					"product_barcodes_view",
-					"permission_hierarchy"
+					"permission_hierarchy",
+					"store_integrations",
+					"store_integration_locations",
+					"product_store_metadata"
 				]
 			},
 			"ExposedEntityNoListing": {

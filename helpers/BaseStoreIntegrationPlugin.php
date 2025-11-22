@@ -97,6 +97,27 @@ abstract class BaseStoreIntegrationPlugin
 	abstract public function SendShoppingList($integrationId, $shoppingListId, $locationId = null);
 
 	/**
+	 * Search for products in the store's catalog
+	 *
+	 * @param int $integrationId The integration ID
+	 * @param string $searchTerm The search term (product name, barcode, etc.)
+	 * @param int|null $locationId The specific store location ID (optional, uses primary if not specified)
+	 * @return array Array of products with structure:
+	 *   [
+	 *     'productId' => string,
+	 *     'name' => string,
+	 *     'description' => string,
+	 *     'brand' => string,
+	 *     'price' => float,
+	 *     'imageUrl' => string,
+	 *     'upc' => string,
+	 *     ... (additional metadata)
+	 *   ]
+	 * @throws \Exception If search fails, integration not authenticated, or no store location configured
+	 */
+	abstract public function SearchProducts($integrationId, $searchTerm, $locationId = null);
+
+	/**
 	 * Lookup product metadata (aisle, price, availability) from the store
 	 *
 	 * @param int $integrationId The integration ID
