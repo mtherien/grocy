@@ -3,3 +3,6 @@ embedded.txt
 /.release
 /packages
 /public/packages
+/data/plugins
+/.vscode/launch.json
+/.vscode/tasks.json

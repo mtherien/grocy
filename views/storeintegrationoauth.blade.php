@@ -17,9 +17,8 @@
 		<div class="alert alert-success">
 			<h4>{{ $__t('Success!') }}</h4>
 			<p>{{ $__t('Your store integration "%s" has been successfully authenticated.', $integrationName) }}</p>
-			<p>{{ $__t('You can now close this window and return to the settings page.') }}</p>
+			<p id="close-message">{{ $__t('This window will close automatically...') }}</p>
 		</div>
-		<a href="{{ $U('/storeintegrations') }}" class="btn btn-primary">{{ $__t('Go to Store Integrations') }}</a>
 		@else
 		<div class="alert alert-danger">
 			<h4>{{ $__t('Authentication Failed') }}</h4>
@@ -32,3 +31,19 @@
 	</div>
 </div>
 @stop
+
+@push('pageScripts')
+<script>
+@if($success)
+// If this page is opened in a popup window, close it automatically
+if (window.opener) {
+	setTimeout(function() {
+		window.close();
+	}, 1500); // Close after 1.5 seconds to allow user to see success message
+} else {
+	// Not in a popup, show manual close instructions
+	document.getElementById('close-message').innerHTML = '{{ $__t('You can now close this window and return to the settings page.') }}';
+}
+@endif
+</script>
+@endpush

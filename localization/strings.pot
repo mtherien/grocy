@@ -2626,3 +2626,9 @@ msgstr ""
 
 msgid "Manage integrations"
 msgstr ""
+
+msgid "Error while getting authorization URL"
+msgstr ""
+
+msgid "This window will close automatically..."
+msgstr ""
