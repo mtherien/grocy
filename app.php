@@ -81,6 +81,7 @@ if (!file_exists($hashCacheFile))
 // Setup base application
 AppFactory::setContainer(new DI\Container());
 $app = AppFactory::create();
+$app->addBodyParsingMiddleware();
 
 $container = $app->getContainer();
 $container->set('view', function (Container $container)

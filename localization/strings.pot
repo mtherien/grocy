@@ -2632,3 +2632,6 @@ msgstr ""
 
 msgid "This window will close automatically..."
 msgstr ""
+
+msgid "Error while creating product"
+msgstr ""

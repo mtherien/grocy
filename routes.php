@@ -140,6 +140,7 @@ $app->group('/api', function (RouteCollectorProxy $group)
 	$group->get('/system/time', '\Grocy\Controllers\SystemApiController:GetSystemTime');
 	$group->get('/system/db-changed-time', '\Grocy\Controllers\SystemApiController:GetDbChangedTime');
 	$group->get('/system/config', '\Grocy\Controllers\SystemApiController:GetConfig');
+	$group->post('/store-integrations/products/create-from-store', '\Grocy\Controllers\StoreIntegrationsApiController:CreateOrFindProductFromStore');
 	$group->post('/system/log-missing-localization', '\Grocy\Controllers\SystemApiController:LogMissingLocalization');
 	$group->get('/system/localization-strings', '\Grocy\Controllers\SystemApiController:GetLocalizationStrings');
 
@@ -211,7 +212,7 @@ $app->group('/api', function (RouteCollectorProxy $group)
 	$group->post('/stock/shoppinglist/add-product', '\Grocy\Controllers\StockApiController:AddProductToShoppingList');
 	$group->post('/stock/shoppinglist/remove-product', '\Grocy\Controllers\StockApiController:RemoveProductFromShoppingList');
 
-	// Store integrations
+	// Store integrations (specific routes before parameterized routes)
 	$group->get('/store-integrations', '\Grocy\Controllers\StoreIntegrationsApiController:GetAll');
 	$group->get('/store-integrations/active', '\Grocy\Controllers\StoreIntegrationsApiController:GetActive');
 	$group->get('/store-integrations/{integrationId}', '\Grocy\Controllers\StoreIntegrationsApiController:GetOne');
@@ -219,7 +220,6 @@ $app->group('/api', function (RouteCollectorProxy $group)
 	$group->get('/store-integrations/{integrationId}/auth-url', '\Grocy\Controllers\StoreIntegrationsApiController:GetAuthorizationUrl');
 	$group->post('/store-integrations/{integrationId}/refresh-token', '\Grocy\Controllers\StoreIntegrationsApiController:RefreshToken');
 	$group->post('/store-integrations/{integrationId}/products/search', '\Grocy\Controllers\StoreIntegrationsApiController:SearchProducts');
-	$group->post('/store-integrations/products/create-or-find', '\Grocy\Controllers\StoreIntegrationsApiController:CreateOrFindProductFromStore');
 	$group->post('/store-integrations/{integrationId}/products/{productId}/lookup-metadata', '\Grocy\Controllers\StoreIntegrationsApiController:LookupProductMetadata');
 	$group->get('/products/{productId}/store-metadata', '\Grocy\Controllers\StoreIntegrationsApiController:GetProductMetadata');
 

@@ -823,7 +823,7 @@ $(document).on('click', '.store-product-item', function(e)
 			if (result === true)
 			{
 				// First, create or find the Grocy product from the store data
-				Grocy.Api.Post('store-integrations/products/create-or-find', {
+				Grocy.Api.Post('store-integrations/products/create-from-store', {
 					external_product_id: productId,
 					name: productName,
 					brand: productBrand,
