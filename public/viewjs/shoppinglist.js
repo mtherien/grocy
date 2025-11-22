@@ -753,7 +753,8 @@ $('#store-search-button').on('click', function()
 					'data-product-id="' + product.productId + '" ' +
 					'data-product-name="' + product.name + '" ' +
 					'data-product-brand="' + (product.brand || '') + '" ' +
-					'data-product-upc="' + (product.upc || '') + '">' +
+					'data-product-upc="' + (product.upc || '') + '" ' +
+				'data-image-url="' + (product.imageUrl || '') + '">' +
 					'<div class="d-flex align-items-center">' +
 					imageHtml +
 					'<div class="flex-grow-1">' +
@@ -791,19 +792,21 @@ $(document).on('click', '.store-product-item', function(e)
 {
 	e.preventDefault();
 
+	var productId = $(this).attr('data-product-id');
 	var productName = $(this).attr('data-product-name');
 	var productBrand = $(this).attr('data-product-brand');
 	var productUpc = $(this).attr('data-product-upc');
+	var imageUrl = $(this).attr('data-image-url');
 	var shoppingListId = $('#selected-shopping-list').val();
 
-	var note = productName;
+	var displayName = productName;
 	if (productBrand)
 	{
-		note = productBrand + ' - ' + productName;
+		displayName = productBrand + ' - ' + productName;
 	}
 
 	bootbox.confirm({
-		message: __t('Add "%s" to your shopping list?', note),
+		message: __t('Add "%s" to your shopping list?', displayName),
 		closeButton: false,
 		buttons: {
 			confirm: {
@@ -819,22 +822,39 @@ $(document).on('click', '.store-product-item', function(e)
 		{
 			if (result === true)
 			{
-				Grocy.Api.Post('stock/shoppinglist/add-product', {
-					product_id: null,
-					list_id: shoppingListId,
-					product_amount: 1,
-					note: note
+				// First, create or find the Grocy product from the store data
+				Grocy.Api.Post('store-integrations/products/create-or-find', {
+					external_product_id: productId,
+					name: productName,
+					brand: productBrand,
+					upc: productUpc,
+					image_url: imageUrl
 				},
-					function(result)
+					function(createResult)
 					{
-						toastr.success(__t('Product added to shopping list'));
-						$('#store-product-search-modal').modal('hide');
-						window.location.reload();
+						// Now add the product to the shopping list
+						Grocy.Api.Post('stock/shoppinglist/add-product', {
+							product_id: createResult.product_id,
+							list_id: shoppingListId,
+							product_amount: 1
+						},
+							function(addResult)
+							{
+								toastr.success(__t('Product added to shopping list'));
+								$('#store-product-search-modal').modal('hide');
+								window.location.reload();
+							},
+							function(xhr)
+							{
+								console.error(xhr);
+								Grocy.FrontendHelpers.ShowGenericError('Error while adding product to shopping list', xhr.response);
+							}
+						);
 					},
 					function(xhr)
 					{
 						console.error(xhr);
-						Grocy.FrontendHelpers.ShowGenericError('Error while adding product to shopping list', xhr.response);
+						Grocy.FrontendHelpers.ShowGenericError('Error while creating product', xhr.response);
 					}
 				);
 			}

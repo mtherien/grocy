@@ -219,6 +219,7 @@ $app->group('/api', function (RouteCollectorProxy $group)
 	$group->get('/store-integrations/{integrationId}/auth-url', '\Grocy\Controllers\StoreIntegrationsApiController:GetAuthorizationUrl');
 	$group->post('/store-integrations/{integrationId}/refresh-token', '\Grocy\Controllers\StoreIntegrationsApiController:RefreshToken');
 	$group->post('/store-integrations/{integrationId}/products/search', '\Grocy\Controllers\StoreIntegrationsApiController:SearchProducts');
+	$group->post('/store-integrations/products/create-or-find', '\Grocy\Controllers\StoreIntegrationsApiController:CreateOrFindProductFromStore');
 	$group->post('/store-integrations/{integrationId}/products/{productId}/lookup-metadata', '\Grocy\Controllers\StoreIntegrationsApiController:LookupProductMetadata');
 	$group->get('/products/{productId}/store-metadata', '\Grocy\Controllers\StoreIntegrationsApiController:GetProductMetadata');
 

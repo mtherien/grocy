@@ -244,4 +244,109 @@ class StoreIntegrationsApiController extends BaseApiController
 			return $this->GenericErrorResponse($response, $ex->getMessage());
 		}
 	}
+
+	public function CreateOrFindProductFromStore(Request $request, Response $response, array $args)
+	{
+		try
+		{
+			$requestBody = $this->GetParsedAndFilteredRequestBody($request);
+			$externalProductId = $requestBody['external_product_id'] ?? null;
+			$name = $requestBody['name'] ?? null;
+			$brand = $requestBody['brand'] ?? null;
+			$upc = $requestBody['upc'] ?? null;
+			$imageUrl = $requestBody['image_url'] ?? null;
+
+			if (empty($name))
+			{
+				return $this->GenericErrorResponse($response, 'Product name is required');
+			}
+
+			// Check if product already exists by UPC
+			$existingProduct = null;
+			if (!empty($upc))
+			{
+				$barcode = $this->getDatabase()->product_barcodes()
+					->where('barcode = :1', $upc)
+					->fetch();
+
+				if ($barcode)
+				{
+					$existingProduct = $this->getDatabase()->products()
+						->where('id = :1', $barcode->product_id)
+						->fetch();
+				}
+			}
+
+			if ($existingProduct)
+			{
+				// Product already exists, return its ID
+				return $this->ApiResponse($response, ['product_id' => $existingProduct->id]);
+			}
+
+			// Create new product
+			$productName = $brand ? $brand . ' - ' . $name : $name;
+
+			// Get default location and QU from user settings
+			$userSettings = $this->getUsersService()->GetUserSettings(GROCY_USER_ID);
+			$locationId = $userSettings['product_presets_location_id'] ?? null;
+			$quId = $userSettings['product_presets_qu_id'] ?? null;
+
+			// If no user defaults, get first location and QU
+			if (!$locationId)
+			{
+				$location = $this->getDatabase()->locations()->fetch();
+				$locationId = $location ? $location->id : 1;
+			}
+
+			if (!$quId)
+			{
+				$qu = $this->getDatabase()->quantity_units()->fetch();
+				$quId = $qu ? $qu->id : 1;
+			}
+
+			// Create product
+			$newProduct = $this->getDatabase()->products()->insert([
+				'name' => $productName,
+				'location_id' => $locationId,
+				'qu_id_purchase' => $quId,
+				'qu_id_stock' => $quId
+			]);
+
+			$productId = $this->getDatabase()->lastInsertId();
+
+			// Add barcode if UPC is provided
+			if (!empty($upc))
+			{
+				$this->getDatabase()->product_barcodes()->insert([
+					'product_id' => $productId,
+					'barcode' => $upc
+				]);
+			}
+
+			// Download and save product image if URL is provided
+			if (!empty($imageUrl))
+			{
+				try
+				{
+					$imageData = file_get_contents($imageUrl);
+					if ($imageData !== false)
+					{
+						$imagePath = GROCY_DATAPATH . '/productpictures/' . $productId . '.jpg';
+						file_put_contents($imagePath, $imageData);
+					}
+				}
+				catch (\Exception $ex)
+				{
+					// Image download failed, but continue anyway
+					error_log('Failed to download product image: ' . $ex->getMessage());
+				}
+			}
+
+			return $this->ApiResponse($response, ['product_id' => $productId]);
+		}
+		catch (\Exception $ex)
+		{
+			return $this->GenericErrorResponse($response, $ex->getMessage());
+		}
+	}
 }
