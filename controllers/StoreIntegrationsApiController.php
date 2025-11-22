@@ -255,6 +255,12 @@ class StoreIntegrationsApiController extends BaseApiController
 			$brand = $requestBody['brand'] ?? null;
 			$upc = $requestBody['upc'] ?? null;
 			$imageUrl = $requestBody['image_url'] ?? null;
+			$description = $requestBody['description'] ?? null;
+			$price = $requestBody['price'] ?? null;
+			$size = $requestBody['size'] ?? null;
+			$aisle = $requestBody['aisle'] ?? null;
+			$shelf = $requestBody['shelf'] ?? null;
+			$department = $requestBody['department'] ?? null;
 
 			if (empty($name))
 			{
@@ -305,13 +311,41 @@ class StoreIntegrationsApiController extends BaseApiController
 			}
 
 			// Create product
-			$newProduct = $this->getDatabase()->products()->insert([
+			$productData = [
 				'name' => $productName,
 				'location_id' => $locationId,
 				'qu_id_purchase' => $quId,
 				'qu_id_stock' => $quId
-			]);
+			];
 
+			// Add optional fields if provided
+			if (!empty($description))
+			{
+				$productData['description'] = $description;
+			}
+
+			if (!empty($aisle))
+			{
+				$productData['store_location_aisle'] = $aisle;
+			}
+
+			if (!empty($shelf))
+			{
+				$productData['store_location_shelf'] = $shelf;
+			}
+
+			if (!empty($department))
+			{
+				$productData['store_location_department'] = $department;
+			}
+
+			// Set store location updated timestamp if any store location data is provided
+			if (!empty($aisle) || !empty($shelf) || !empty($department))
+			{
+				$productData['store_location_updated'] = date('Y-m-d H:i:s');
+			}
+
+			$newProduct = $this->getDatabase()->products()->insert($productData);
 			$productId = $this->getDatabase()->lastInsertId();
 
 			// Add barcode if UPC is provided
@@ -328,11 +362,39 @@ class StoreIntegrationsApiController extends BaseApiController
 			{
 				try
 				{
-					$imageData = file_get_contents($imageUrl);
-					if ($imageData !== false)
+					// Download image using cURL for better HTTPS support
+					$ch = curl_init($imageUrl);
+					curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+					curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+					curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // For development
+					$imageData = curl_exec($ch);
+					$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+					curl_close($ch);
+
+					if ($imageData !== false && $httpCode === 200)
 					{
-						$imagePath = GROCY_DATAPATH . '/productpictures/' . $productId . '.jpg';
-						file_put_contents($imagePath, $imageData);
+						$imageFilename = $productId . '.jpg';
+
+						// Use FilesService to get the correct path (includes storage subdirectory)
+						$imagePath = $this->getFilesService()->GetFilePath('productpictures', $imageFilename);
+
+						// Save image file
+						$result = file_put_contents($imagePath, $imageData);
+						if ($result !== false)
+						{
+							// Update product with picture filename
+							$this->getDatabase()->products($productId)->update([
+								'picture_file_name' => $imageFilename
+							]);
+						}
+						else
+						{
+							error_log('Failed to write product image file: ' . $imagePath);
+						}
+					}
+					else
+					{
+						error_log('Failed to download product image from: ' . $imageUrl . ' (HTTP ' . $httpCode . ')');
 					}
 				}
 				catch (\Exception $ex)

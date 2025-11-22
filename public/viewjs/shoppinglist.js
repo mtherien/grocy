@@ -754,7 +754,13 @@ $('#store-search-button').on('click', function()
 					'data-product-name="' + product.name + '" ' +
 					'data-product-brand="' + (product.brand || '') + '" ' +
 					'data-product-upc="' + (product.upc || '') + '" ' +
-				'data-image-url="' + (product.imageUrl || '') + '">' +
+					'data-image-url="' + (product.imageUrl || '') + '" ' +
+					'data-description="' + (product.description || '') + '" ' +
+					'data-price="' + (product.price || '') + '" ' +
+					'data-size="' + (product.size || '') + '" ' +
+					'data-aisle="' + (product.aisle || '') + '" ' +
+					'data-shelf="' + (product.shelf || '') + '" ' +
+					'data-department="' + (product.department || '') + '">' +
 					'<div class="d-flex align-items-center">' +
 					imageHtml +
 					'<div class="flex-grow-1">' +
@@ -797,6 +803,12 @@ $(document).on('click', '.store-product-item', function(e)
 	var productBrand = $(this).attr('data-product-brand');
 	var productUpc = $(this).attr('data-product-upc');
 	var imageUrl = $(this).attr('data-image-url');
+	var description = $(this).attr('data-description');
+	var price = $(this).attr('data-price');
+	var size = $(this).attr('data-size');
+	var aisle = $(this).attr('data-aisle');
+	var shelf = $(this).attr('data-shelf');
+	var department = $(this).attr('data-department');
 	var shoppingListId = $('#selected-shopping-list').val();
 
 	var displayName = productName;
@@ -828,7 +840,13 @@ $(document).on('click', '.store-product-item', function(e)
 					name: productName,
 					brand: productBrand,
 					upc: productUpc,
-					image_url: imageUrl
+					image_url: imageUrl,
+					description: description,
+					price: price,
+					size: size,
+					aisle: aisle,
+					shelf: shelf,
+					department: department
 				},
 					function(createResult)
 					{
