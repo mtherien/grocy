@@ -21,6 +21,9 @@ var shoppingListTable = $('#shoppinglist-table').DataTable({
 $('#shoppinglist-table tbody').removeClass("d-none");
 shoppingListTable.columns.adjust().draw();
 
+// Track if any products were added during store search modal session
+var storeProductsAdded = false;
+
 var shoppingListPrintShadowTable = $('#shopping-list-print-shadow-table').DataTable({
 	"orderFixed": [[0, 'asc'], [2, 'asc']],
 	'columnDefs': [
@@ -798,6 +801,9 @@ $(document).on('click', '.store-product-item', function(e)
 {
 	e.preventDefault();
 
+	// Mark that a product was added in this session
+	storeProductsAdded = true;
+
 	var productId = $(this).attr('data-product-id');
 	var productName = $(this).attr('data-product-name');
 	var productBrand = $(this).attr('data-product-brand');
@@ -835,6 +841,91 @@ $(document).on('click', '.store-product-item', function(e)
 			},
 				function(addResult)
 				{
+					// Function to reset the search UI
+					var resetSearchUI = function()
+					{
+						toastr.success(__t('Product added to shopping list'));
+						$('#store-search-term').val('');
+						$('#store-search-results').addClass('d-none');
+						$('#store-search-error').addClass('d-none');
+						$('#store-search-term').focus();
+					};
+
+					// Function to add the item to the table
+					var addItemToTable = function()
+					{
+						// Fetch the shopping list to get the newly added item
+						Grocy.Api.Get('objects/shopping_list?query[]=shopping_list_id=' + shoppingListId + '&order=row_created_timestamp:desc&limit=1',
+							function(items)
+							{
+								if (items && items.length > 0)
+								{
+									var item = items[0];
+									// Add a simplified row to the DataTable
+									var displayName = productBrand ? productBrand + ' - ' + productName : productName;
+
+									// Determine the group name - use aisle if available, otherwise use product group or "Ungrouped"
+									var groupName = '';
+									if (aisle)
+									{
+										// Check if aisle name already contains "Aisle" (case-insensitive)
+										var aisleDisplay = aisle.toLowerCase().includes('aisle') ? aisle : 'Aisle ' + aisle;
+
+										if (department)
+										{
+											groupName = department + ' - ' + aisleDisplay;
+										}
+										else
+										{
+											groupName = aisleDisplay;
+										}
+									}
+									else
+									{
+										groupName = '<span class="font-italic font-weight-light">' + __t('Ungrouped') + '</span>';
+									}
+
+									var newRowHtml = '<tr id="shoppinglistitem-' + item.id + '-row">' +
+										'<td class="fit-content border-right">' +
+										'<a class="btn btn-success btn-sm order-listitem-button" href="#" data-item-id="' + item.id + '" data-item-done="0"><i class="fa-solid fa-check"></i></a> ' +
+										'<a class="btn btn-sm btn-info show-as-dialog-link" href="' + U('/shoppinglistitem/' + item.id + '?embedded&list=' + shoppingListId) + '"><i class="fa-solid fa-edit"></i></a> ' +
+										'<a class="btn btn-sm btn-danger shoppinglist-delete-button" href="#" data-shoppinglist-id="' + item.id + '"><i class="fa-solid fa-trash"></i></a> ' +
+										'<a class="btn btn-sm btn-primary shopping-list-stock-add-workflow-list-item-button" href="' + U('/purchase?embedded&flow=shoppinglistitemtostock&product=' + createResult.product_id + '&amount=1&listitemid=' + item.id + '&quId=' + item.qu_id) + '"><i class="fa-solid fa-box"></i></a>' +
+										'</td>' +
+										'<td class="productcard-trigger cursor-link" data-product-id="' + createResult.product_id + '">' + displayName + '</td>' +
+										'<td><span class="locale-number locale-number-quantity-amount">1</span></td>' +
+										'<td>' + groupName + '</td>' +
+										'<td id="shoppinglistitem-' + item.id + '-status-info" class="d-none">xxUNDONExx</td>' +
+										'<td class="d-none"></td>' +
+										'<td class="d-none"></td>' +
+										'<td class="d-none"></td>' +
+										'<td></td>' +
+										'</tr>';
+
+									// Add to DataTable and redraw with grouping
+									var $row = $(newRowHtml);
+									var addedRow = shoppingListTable.row.add($row);
+
+									// Invalidate and redraw to ensure grouping updates
+									shoppingListTable.rows().invalidate().draw();
+
+									// Update the shopping list count in the dropdown
+									var currentCount = parseInt($('#selected-shopping-list option:selected').text().match(/\((\d+)\)/)[1] || 0);
+									var newCount = currentCount + 1;
+									var listName = $('#selected-shopping-list option:selected').text().replace(/\(\d+\)/, '(' + newCount + ')');
+									$('#selected-shopping-list option:selected').text(listName);
+								}
+								resetSearchUI();
+							},
+							function(xhr)
+							{
+								// Even if we can't fetch the item, still reset the UI
+								console.error('Could not fetch newly added item:', xhr);
+								resetSearchUI();
+							}
+						);
+					};
+
 					// Save the selected store integration ID to the shopping list
 					var selectedIntegrationId = $('#store-search-integration').val();
 					if (selectedIntegrationId)
@@ -844,26 +935,20 @@ $(document).on('click', '.store-product-item', function(e)
 						},
 							function()
 							{
-								// Successfully saved, now reload
-								toastr.success(__t('Product added to shopping list'));
-								$('#store-product-search-modal').modal('hide');
-								window.location.reload();
+								// Successfully saved, now add item to table
+								addItemToTable();
 							},
 							function()
 							{
-								// Even if saving store preference fails, still show success and reload
-								toastr.success(__t('Product added to shopping list'));
-								$('#store-product-search-modal').modal('hide');
-								window.location.reload();
+								// Even if saving store preference fails, still add item to table
+								addItemToTable();
 							}
 						);
 					}
 					else
 					{
-						// No store selected, just reload
-						toastr.success(__t('Product added to shopping list'));
-						$('#store-product-search-modal').modal('hide');
-						window.location.reload();
+						// No store selected, just add item to table
+						addItemToTable();
 					}
 				},
 				function(xhr)
@@ -889,4 +974,13 @@ $('#store-product-search-modal').on('shown.bs.modal', function()
 	{
 		$('#store-search-integration').val(preferredStoreIntegrationId);
 	}
+});
+
+// Reset the search fields when modal opens
+$('#store-product-search-modal').on('show.bs.modal', function()
+{
+	storeProductsAdded = false;
+	$('#store-search-term').val('');
+	$('#store-search-results').addClass('d-none');
+	$('#store-search-error').addClass('d-none');
 });
