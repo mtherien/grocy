@@ -418,6 +418,10 @@ class StockController extends BaseController
 			$listId = $request->getQueryParams()['list'];
 		}
 
+		// Get the selected shopping list to access its preferred store
+		$selectedList = $this->getDatabase()->shopping_lists($listId);
+		$preferredStoreIntegrationId = $selectedList ? $selectedList->store_integration_id : null;
+
 		// Get active store integrations if feature is enabled
 		$storeIntegrations = [];
 		$storeLocations = [];
@@ -458,7 +462,8 @@ class StockController extends BaseController
 			'userfields' => $this->getUserfieldsService()->GetFields('shopping_list'),
 			'userfieldValues' => $this->getUserfieldsService()->GetAllValues('shopping_list'),
 			'storeIntegrations' => $storeIntegrations,
-			'storeLocations' => $storeLocations
+			'storeLocations' => $storeLocations,
+			'preferredStoreIntegrationId' => $preferredStoreIntegrationId
 		]);
 	}
 

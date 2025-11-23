@@ -508,7 +508,8 @@ $listItem->last_price_total = $listItem->price * $listItem->amount;
 <!-- Store Product Search Modal -->
 <div class="modal fade"
 	id="store-product-search-modal"
-	tabindex="-1">
+	tabindex="-1"
+	data-preferred-store-integration-id="{{ $preferredStoreIntegrationId }}">
 	<div class="modal-dialog modal-lg">
 		<div class="modal-content">
 			<div class="modal-header">

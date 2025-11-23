@@ -835,9 +835,36 @@ $(document).on('click', '.store-product-item', function(e)
 			},
 				function(addResult)
 				{
-					toastr.success(__t('Product added to shopping list'));
-					$('#store-product-search-modal').modal('hide');
-					window.location.reload();
+					// Save the selected store integration ID to the shopping list
+					var selectedIntegrationId = $('#store-search-integration').val();
+					if (selectedIntegrationId)
+					{
+						Grocy.Api.Put('objects/shopping_lists/' + shoppingListId, {
+							store_integration_id: selectedIntegrationId
+						},
+							function()
+							{
+								// Successfully saved, now reload
+								toastr.success(__t('Product added to shopping list'));
+								$('#store-product-search-modal').modal('hide');
+								window.location.reload();
+							},
+							function()
+							{
+								// Even if saving store preference fails, still show success and reload
+								toastr.success(__t('Product added to shopping list'));
+								$('#store-product-search-modal').modal('hide');
+								window.location.reload();
+							}
+						);
+					}
+					else
+					{
+						// No store selected, just reload
+						toastr.success(__t('Product added to shopping list'));
+						$('#store-product-search-modal').modal('hide');
+						window.location.reload();
+					}
 				},
 				function(xhr)
 				{
@@ -852,4 +879,14 @@ $(document).on('click', '.store-product-item', function(e)
 			Grocy.FrontendHelpers.ShowGenericError('Error while creating product', xhr.response);
 		}
 	);
+});
+
+// Pre-select the remembered store when the modal opens
+$('#store-product-search-modal').on('shown.bs.modal', function()
+{
+	var preferredStoreIntegrationId = $(this).attr('data-preferred-store-integration-id');
+	if (preferredStoreIntegrationId && preferredStoreIntegrationId !== 'null' && preferredStoreIntegrationId !== '')
+	{
+		$('#store-search-integration').val(preferredStoreIntegrationId);
+	}
 });
