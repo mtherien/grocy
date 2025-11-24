@@ -75,33 +75,22 @@ abstract class BaseStoreIntegrationPlugin
 	abstract public function SearchStoreLocations($integrationId, $zipCode = null, $lat = null, $lon = null, $radiusMiles = 10);
 
 	/**
-	 * Save a store location for an integration
-	 *
-	 * @param int $integrationId The integration ID
-	 * @param array $locationData The location data from SearchStoreLocations
-	 * @param bool $isPrimary Whether this should be the primary location
-	 * @return int The saved location's database ID
-	 * @throws \Exception If save fails
-	 */
-	abstract public function SaveStoreLocation($integrationId, $locationData, $isPrimary = false);
-
-	/**
 	 * Send a shopping list to the store's cart/list system
 	 *
 	 * @param int $integrationId The integration ID
 	 * @param int $shoppingListId The Grocy shopping list ID
-	 * @param int|null $locationId The specific store location ID (optional, uses primary if not specified)
+	 * @param int|null $shoppingLocationId The Grocy shopping location ID (optional, uses primary if not specified)
 	 * @return array Response data from the store API
 	 * @throws \Exception If send fails, integration not authenticated, or no store location configured
 	 */
-	abstract public function SendShoppingList($integrationId, $shoppingListId, $locationId = null);
+	abstract public function SendShoppingList($integrationId, $shoppingListId, $shoppingLocationId = null);
 
 	/**
 	 * Search for products in the store's catalog
 	 *
 	 * @param int $integrationId The integration ID
 	 * @param string $searchTerm The search term (product name, barcode, etc.)
-	 * @param int|null $locationId The specific store location ID (optional, uses primary if not specified)
+	 * @param string|null $externalLocationId The external store location ID from the store's API (optional)
 	 * @return array Array of products with structure:
 	 *   [
 	 *     'productId' => string,
@@ -115,17 +104,18 @@ abstract class BaseStoreIntegrationPlugin
 	 *   ]
 	 * @throws \Exception If search fails, integration not authenticated, or no store location configured
 	 */
-	abstract public function SearchProducts($integrationId, $searchTerm, $locationId = null);
+	abstract public function SearchProducts($integrationId, $searchTerm, $externalLocationId = null);
 
 	/**
 	 * Lookup product metadata (aisle, price, availability) from the store
 	 *
 	 * @param int $integrationId The integration ID
 	 * @param int $productId The Grocy product ID
+	 * @param int|null $shoppingLocationId The Grocy shopping location ID (optional)
 	 * @return array Metadata with keys: external_product_id, aisle, shelf, department, category, price, price_unit, availability, raw_data
 	 * @throws \Exception If lookup fails, product not found, integration not authenticated, or no store location configured
 	 */
-	abstract public function LookupProductMetadata($integrationId, $productId);
+	abstract public function LookupProductMetadata($integrationId, $productId, $shoppingLocationId = null);
 
 	/**
 	 * Get the store type identifier (e.g., 'kroger', 'walmart', 'target')

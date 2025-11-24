@@ -103,7 +103,7 @@ class StoreIntegrationsService extends BaseService
 		return $now >= $expiresAt;
 	}
 
-	public function SendShoppingListToStore($integrationId, $shoppingListId, $locationId = null)
+	public function SendShoppingListToStore($integrationId, $shoppingListId, $shoppingLocationId = null)
 	{
 		$integration = $this->GetById($integrationId);
 
@@ -122,7 +122,7 @@ class StoreIntegrationsService extends BaseService
 		}
 
 		// Send the shopping list to the store
-		return $storeService->SendShoppingList($integrationId, $shoppingListId, $locationId);
+		return $storeService->SendShoppingList($integrationId, $shoppingListId, $shoppingLocationId);
 	}
 
 	public function LookupProductMetadata($integrationId, $productId)
@@ -147,13 +147,13 @@ class StoreIntegrationsService extends BaseService
 		return $storeService->LookupProductMetadata($integrationId, $productId);
 	}
 
-	public function GetProductStoreMetadata($productId, $integrationId = null)
+	public function GetProductStoreMetadata($productId, $shoppingLocationId = null)
 	{
-		if ($integrationId)
+		if ($shoppingLocationId)
 		{
 			return $this->getDatabase()->product_store_metadata()
 				->where('product_id = :1', $productId)
-				->where('store_integration_id = :2', $integrationId)
+				->where('shopping_location_id = :2', $shoppingLocationId)
 				->fetch();
 		}
 		else
@@ -162,6 +162,57 @@ class StoreIntegrationsService extends BaseService
 				->where('product_id = :1', $productId)
 				->orderBy('last_updated', 'DESC')
 				->fetch();
+		}
+	}
+
+	/**
+	 * Get product metadata for a specific shopping location
+	 *
+	 * @param int $productId
+	 * @param int $shoppingLocationId
+	 * @return object|null
+	 */
+	public function GetProductMetadataForLocation($productId, $shoppingLocationId)
+	{
+		return $this->getDatabase()->product_store_metadata()
+			->where('product_id = :1', $productId)
+			->where('shopping_location_id = :2', $shoppingLocationId)
+			->fetch();
+	}
+
+	/**
+	 * Save product metadata for a shopping location
+	 *
+	 * @param int $productId
+	 * @param int $shoppingLocationId
+	 * @param array $metadata
+	 */
+	public function SaveProductMetadata($productId, $shoppingLocationId, $metadata)
+	{
+		$existing = $this->GetProductMetadataForLocation($productId, $shoppingLocationId);
+
+		$data = [
+			'product_id' => $productId,
+			'shopping_location_id' => $shoppingLocationId,
+			'external_product_id' => $metadata['external_product_id'] ?? null,
+			'aisle' => $metadata['aisle'] ?? null,
+			'shelf' => $metadata['shelf'] ?? null,
+			'department' => $metadata['department'] ?? null,
+			'category' => $metadata['category'] ?? null,
+			'price' => $metadata['price'] ?? null,
+			'price_unit' => $metadata['price_unit'] ?? null,
+			'availability' => $metadata['availability'] ?? null,
+			'metadata_json' => json_encode($metadata['raw_data'] ?? []),
+			'last_updated' => date('Y-m-d H:i:s')
+		];
+
+		if ($existing)
+		{
+			$existing->update($data);
+		}
+		else
+		{
+			$this->getDatabase()->product_store_metadata()->insert($data);
 		}
 	}
 
@@ -186,60 +237,134 @@ class StoreIntegrationsService extends BaseService
 		return $storeService->SearchStoreLocations($integrationId, $zipCode, $lat, $lon);
 	}
 
-	public function GetStoreLocations($integrationId)
+	/**
+	 * Get all shopping locations for a specific integration
+	 *
+	 * @param int $integrationId
+	 * @return Result
+	 */
+	public function GetShoppingLocationsForIntegration($integrationId): Result
 	{
-		return $this->getDatabase()->store_integration_locations()
+		return $this->getDatabase()->shopping_locations()
 			->where('store_integration_id = :1', $integrationId)
 			->orderBy('is_primary', 'DESC')
 			->orderBy('name');
 	}
 
-	public function GetPrimaryStoreLocation($integrationId)
+	/**
+	 * Get the primary shopping location for an integration
+	 *
+	 * @param int $integrationId
+	 * @return object|null
+	 */
+	public function GetPrimaryShoppingLocation($integrationId)
 	{
-		return $this->getDatabase()->store_integration_locations()
+		return $this->getDatabase()->shopping_locations()
 			->where('store_integration_id = :1', $integrationId)
 			->where('is_primary = 1')
 			->fetch();
 	}
 
-	public function SaveStoreLocation($integrationId, $locationData, $isPrimary = false)
+	/**
+	 * Save a store location from API search (creates shopping_location directly)
+	 *
+	 * @param int $integrationId
+	 * @param array $locationData API response data
+	 * @param bool $isPrimary Set as primary location for this integration
+	 * @param string|null $customName Optional custom name
+	 * @return int The shopping_location ID
+	 */
+	public function SaveStoreLocation($integrationId, $locationData, $isPrimary = false, $customName = null)
 	{
 		$integration = $this->GetById($integrationId);
 
-		// Get the appropriate store service based on store_type
-		$storeService = $this->getStoreService($integration->store_type);
+		// Unset other primary locations if this is primary
+		if ($isPrimary)
+		{
+			$this->getDatabase()->shopping_locations()
+				->where('store_integration_id = :1', $integrationId)
+				->update(['is_primary' => 0]);
+		}
 
-		return $storeService->SaveStoreLocation($integrationId, $locationData, $isPrimary);
+		// Check if location already exists
+		$existing = $this->getDatabase()->shopping_locations()
+			->where('store_integration_id = :1', $integrationId)
+			->where('external_location_id = :2', $locationData['locationId'])
+			->fetch();
+
+		$data = [
+			'name' => $customName ?? $locationData['name'],
+			'description' => sprintf('Integrated %s store', $integration->name),
+			'store_integration_id' => $integrationId,
+			'external_location_id' => $locationData['locationId'],
+			'address' => $locationData['address']['addressLine1'] ?? null,
+			'city' => $locationData['address']['city'] ?? null,
+			'state' => $locationData['address']['state'] ?? null,
+			'zip_code' => $locationData['address']['zipCode'] ?? null,
+			'phone' => $locationData['phone'] ?? null,
+			'latitude' => $locationData['geolocation']['latitude'] ?? null,
+			'longitude' => $locationData['geolocation']['longitude'] ?? null,
+			'is_primary' => $isPrimary ? 1 : 0,
+			'metadata_json' => json_encode($locationData)
+		];
+
+		if ($existing)
+		{
+			$existing->update($data);
+			return $existing->id;
+		}
+		else
+		{
+			$this->getDatabase()->shopping_locations()->insert($data);
+			return $this->getDatabase()->lastInsertId();
+		}
 	}
 
-	public function DeleteStoreLocation($locationId)
+	/**
+	 * Delete a shopping location
+	 *
+	 * @param int $locationId
+	 * @return bool
+	 */
+	public function DeleteShoppingLocation($locationId)
 	{
-		$location = $this->getDatabase()->store_integration_locations()
+		$location = $this->getDatabase()->shopping_locations()
 			->where('id = :1', $locationId)
 			->fetch();
 
 		if (!$location)
 		{
-			throw new \Exception('Store location not found');
+			throw new \Exception('Shopping location not found');
 		}
 
 		$location->delete();
 		return true;
 	}
 
-	public function SetPrimaryStoreLocation($locationId)
+	/**
+	 * Set a shopping location as primary for its integration
+	 *
+	 * @param int $locationId
+	 * @return bool
+	 */
+	public function SetPrimaryShoppingLocation($locationId)
 	{
-		$location = $this->getDatabase()->store_integration_locations()
+		$location = $this->getDatabase()->shopping_locations()
 			->where('id = :1', $locationId)
 			->fetch();
 
 		if (!$location)
 		{
-			throw new \Exception('Store location not found');
+			throw new \Exception('Shopping location not found');
+		}
+
+		if (!$location->store_integration_id)
+		{
+			throw new \Exception('Shopping location is not integrated');
 		}
 
 		// Unset other primary locations for this integration
-		$this->getDatabase()->store_integration_locations()
+		$this->getDatabase()->shopping_locations()
 			->where('store_integration_id = :1', $location->store_integration_id)
 			->update(['is_primary' => 0]);
 
@@ -249,13 +374,45 @@ class StoreIntegrationsService extends BaseService
 		return true;
 	}
 
-	public function SearchProducts($integrationId, $searchTerm, $locationId = null)
+	/**
+	 * Search products - returns shopping_location_id in results
+	 *
+	 * @param int $integrationId
+	 * @param string $searchTerm
+	 * @param int|null $shoppingLocationId Optional: search at specific location
+	 * @return array
+	 */
+	public function SearchProducts($integrationId, $searchTerm, $shoppingLocationId = null)
 	{
 		$integration = $this->GetById($integrationId);
 
 		if (!$integration->active)
 		{
 			throw new \Exception('Store integration is not active');
+		}
+
+		// Get external location ID if shopping location provided
+		$externalLocationId = null;
+		if ($shoppingLocationId)
+		{
+			$location = $this->getDatabase()->shopping_locations()
+				->where('id = :1', $shoppingLocationId)
+				->fetch();
+
+			if ($location && $location->store_integration_id == $integrationId)
+			{
+				$externalLocationId = $location->external_location_id;
+			}
+		}
+		else
+		{
+			// Use primary location if no location specified
+			$primaryLocation = $this->GetPrimaryShoppingLocation($integrationId);
+			if ($primaryLocation)
+			{
+				$externalLocationId = $primaryLocation->external_location_id;
+				$shoppingLocationId = $primaryLocation->id;
+			}
 		}
 
 		// Get the appropriate store service based on store_type
@@ -268,7 +425,86 @@ class StoreIntegrationsService extends BaseService
 		}
 
 		// Search for products
-		return $storeService->SearchProducts($integrationId, $searchTerm, $locationId);
+		$results = $storeService->SearchProducts($integrationId, $searchTerm, $externalLocationId);
+
+		// Add shopping_location_id to each result
+		foreach ($results as &$result)
+		{
+			$result['shopping_location_id'] = $shoppingLocationId;
+		}
+
+		return $results;
+	}
+
+	/**
+	 * Check if a shopping location is integrated
+	 *
+	 * @param int $shoppingLocationId
+	 * @return bool
+	 */
+	public function IsShoppingLocationIntegrated($shoppingLocationId)
+	{
+		$location = $this->getDatabase()->shopping_locations()
+			->where('id = :1', $shoppingLocationId)
+			->fetch();
+
+		return $location && !empty($location->store_integration_id);
+	}
+
+	/**
+	 * Get integration for a shopping location
+	 *
+	 * @param int $shoppingLocationId
+	 * @return object|null
+	 */
+	public function GetIntegrationForShoppingLocation($shoppingLocationId)
+	{
+		$location = $this->getDatabase()->shopping_locations()
+			->where('id = :1', $shoppingLocationId)
+			->fetch();
+
+		if (!$location || !$location->store_integration_id)
+		{
+			return null;
+		}
+
+		return $this->GetById($location->store_integration_id);
+	}
+
+	/**
+	 * Get all shopping locations with their integration status
+	 *
+	 * @return array Enhanced shopping_location objects with integration data
+	 */
+	public function GetShoppingLocationsWithIntegrationStatus()
+	{
+		$locations = $this->getDatabase()->shopping_locations();
+		$result = [];
+
+		foreach ($locations as $location)
+		{
+			$locationData = (array)$location;
+			$locationData['is_integrated'] = !empty($location->store_integration_id);
+			$locationData['integration'] = null;
+
+			if ($locationData['is_integrated'])
+			{
+				try
+				{
+					$integration = $this->GetById($location->store_integration_id);
+					$locationData['integration'] = $integration;
+				}
+				catch (\Exception $ex)
+				{
+					// Integration might have been deleted
+					$locationData['integration'] = null;
+				}
+			}
+
+			$result[] = (object)$locationData;
+		}
+
+		return $result;
 	}
 
 	private $loadedPlugins = [];

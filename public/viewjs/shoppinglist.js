@@ -763,7 +763,8 @@ $('#store-search-button').on('click', function()
 					'data-size="' + (product.size || '') + '" ' +
 					'data-aisle="' + (product.aisle || '') + '" ' +
 					'data-shelf="' + (product.shelf || '') + '" ' +
-					'data-department="' + (product.department || '') + '">' +
+					'data-department="' + (product.department || '') + '" ' +
+					'data-shopping-location-id="' + (product.shopping_location_id || '') + '">' +
 					'<div class="d-flex align-items-center">' +
 					imageHtml +
 					'<div class="flex-grow-1">' +
@@ -816,6 +817,7 @@ $(document).on('click', '.store-product-item', function(e)
 	var shelf = $(this).attr('data-shelf');
 	var department = $(this).attr('data-department');
 	var shoppingListId = $('#selected-shopping-list').val();
+	var shoppingLocationId = $(this).attr('data-shopping-location-id');
 
 	// First, create or find the Grocy product from the store data
 	Grocy.Api.Post('store-integrations/products/create-from-store', {
@@ -829,7 +831,8 @@ $(document).on('click', '.store-product-item', function(e)
 		size: size,
 		aisle: aisle,
 		shelf: shelf,
-		department: department
+		department: department,
+		shopping_location_id: shoppingLocationId
 	},
 		function(createResult)
 		{

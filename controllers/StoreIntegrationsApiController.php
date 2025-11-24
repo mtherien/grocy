@@ -42,12 +42,12 @@ class StoreIntegrationsApiController extends BaseApiController
 				return $this->GenericErrorResponse($response, 'shopping_list_id is required');
 			}
 
-			$locationId = $requestBody['location_id'] ?? null;
+			$shoppingLocationId = $requestBody['shopping_location_id'] ?? null;
 
 			$result = $this->getStoreIntegrationsService()->SendShoppingListToStore(
 				$args['integrationId'],
 				$requestBody['shopping_list_id'],
-				$locationId
+				$shoppingLocationId
 			);
 
 			return $this->ApiResponse($response, $result);
@@ -112,10 +112,10 @@ class StoreIntegrationsApiController extends BaseApiController
 	{
 		try
 		{
-			$integrationId = $request->getQueryParams()['integration_id'] ?? null;
+			$shoppingLocationId = $request->getQueryParams()['shopping_location_id'] ?? null;
 			$metadata = $this->getStoreIntegrationsService()->GetProductStoreMetadata(
 				$args['productId'],
-				$integrationId
+				$shoppingLocationId
 			);
 
 			if ($metadata)
@@ -157,11 +157,11 @@ class StoreIntegrationsApiController extends BaseApiController
 		}
 	}
 
-	public function GetStoreLocations(Request $request, Response $response, array $args)
+	public function GetShoppingLocations(Request $request, Response $response, array $args)
 	{
 		try
 		{
-			$locations = $this->getStoreIntegrationsService()->GetStoreLocations($args['integrationId']);
+			$locations = $this->getStoreIntegrationsService()->GetShoppingLocationsForIntegration($args['integrationId']);
 			return $this->ApiResponse($response, $locations);
 		}
 		catch (\Exception $ex)
@@ -176,15 +176,21 @@ class StoreIntegrationsApiController extends BaseApiController
 		{
 			$requestBody = $this->GetParsedAndFilteredRequestBody($request);
 			$isPrimary = $requestBody['is_primary'] ?? false;
-			unset($requestBody['is_primary']);
+			$customName = $requestBody['custom_name'] ?? null;
+			$locationData = $requestBody['location_data'] ?? $requestBody;
 
-			$locationId = $this->getStoreIntegrationsService()->SaveStoreLocation(
+			// Remove non-location data from location_data
+			unset($locationData['is_primary']);
+			unset($locationData['custom_name']);
+
+			$shoppingLocationId = $this->getStoreIntegrationsService()->SaveStoreLocation(
 				$args['integrationId'],
-				$requestBody,
-				$isPrimary
+				$locationData,
+				$isPrimary,
+				$customName
 			);
 
-			return $this->ApiResponse($response, ['id' => $locationId]);
+			return $this->ApiResponse($response, ['shopping_location_id' => $shoppingLocationId]);
 		}
 		catch (\Exception $ex)
 		{
@@ -192,11 +198,11 @@ class StoreIntegrationsApiController extends BaseApiController
 		}
 	}
 
-	public function DeleteStoreLocation(Request $request, Response $response, array $args)
+	public function DeleteShoppingLocation(Request $request, Response $response, array $args)
 	{
 		try
 		{
-			$this->getStoreIntegrationsService()->DeleteStoreLocation($args['locationId']);
+			$this->getStoreIntegrationsService()->DeleteShoppingLocation($args['locationId']);
 			return $this->EmptyApiResponse($response);
 		}
 		catch (\Exception $ex)
@@ -205,11 +211,11 @@ class StoreIntegrationsApiController extends BaseApiController
 		}
 	}
 
-	public function SetPrimaryStoreLocation(Request $request, Response $response, array $args)
+	public function SetPrimaryShoppingLocation(Request $request, Response $response, array $args)
 	{
 		try
 		{
-			$this->getStoreIntegrationsService()->SetPrimaryStoreLocation($args['locationId']);
+			$this->getStoreIntegrationsService()->SetPrimaryShoppingLocation($args['locationId']);
 			return $this->EmptyApiResponse($response);
 		}
 		catch (\Exception $ex)
@@ -224,7 +230,7 @@ class StoreIntegrationsApiController extends BaseApiController
 		{
 			$requestBody = $this->GetParsedAndFilteredRequestBody($request);
 			$searchTerm = $requestBody['search_term'] ?? null;
-			$locationId = $requestBody['location_id'] ?? null;
+			$shoppingLocationId = $requestBody['shopping_location_id'] ?? null;
 
 			if (empty($searchTerm))
 			{
@@ -234,7 +240,7 @@ class StoreIntegrationsApiController extends BaseApiController
 			$products = $this->getStoreIntegrationsService()->SearchProducts(
 				$args['integrationId'],
 				$searchTerm,
-				$locationId
+				$shoppingLocationId
 			);
 
 			return $this->ApiResponse($response, $products);
@@ -261,6 +267,7 @@ class StoreIntegrationsApiController extends BaseApiController
 			$aisle = $requestBody['aisle'] ?? null;
 			$shelf = $requestBody['shelf'] ?? null;
 			$department = $requestBody['department'] ?? null;
+			$shoppingLocationId = $requestBody['shopping_location_id'] ?? null;
 
 			if (empty($name))
 			{
@@ -285,6 +292,12 @@ class StoreIntegrationsApiController extends BaseApiController
 
 			if ($existingProduct)
 			{
+				// Product already exists - update shopping_location_id if not set and provided
+				if ($shoppingLocationId && empty($existingProduct->shopping_location_id))
+				{
+					$existingProduct->update(['shopping_location_id' => $shoppingLocationId]);
+				}
+
 				// Product already exists, return its ID
 				return $this->ApiResponse($response, ['product_id' => $existingProduct->id]);
 			}
@@ -315,7 +328,8 @@ class StoreIntegrationsApiController extends BaseApiController
 				'name' => $productName,
 				'location_id' => $locationId,
 				'qu_id_purchase' => $quId,
-				'qu_id_stock' => $quId
+				'qu_id_stock' => $quId,
+				'shopping_location_id' => $shoppingLocationId
 			];
 
 			// Add optional fields if provided

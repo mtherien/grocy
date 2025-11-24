@@ -223,12 +223,12 @@ $app->group('/api', function (RouteCollectorProxy $group)
 	$group->post('/store-integrations/{integrationId}/products/{productId}/lookup-metadata', '\Grocy\Controllers\StoreIntegrationsApiController:LookupProductMetadata');
 	$group->get('/products/{productId}/store-metadata', '\Grocy\Controllers\StoreIntegrationsApiController:GetProductMetadata');
 
-	// Store locations
+	// Shopping locations (store integrations)
 	$group->post('/store-integrations/{integrationId}/locations/search', '\Grocy\Controllers\StoreIntegrationsApiController:SearchStoreLocations');
-	$group->get('/store-integrations/{integrationId}/locations', '\Grocy\Controllers\StoreIntegrationsApiController:GetStoreLocations');
+	$group->get('/store-integrations/{integrationId}/locations', '\Grocy\Controllers\StoreIntegrationsApiController:GetShoppingLocations');
 	$group->post('/store-integrations/{integrationId}/locations', '\Grocy\Controllers\StoreIntegrationsApiController:SaveStoreLocation');
-	$group->delete('/store-locations/{locationId}', '\Grocy\Controllers\StoreIntegrationsApiController:DeleteStoreLocation');
-	$group->post('/store-locations/{locationId}/set-primary', '\Grocy\Controllers\StoreIntegrationsApiController:SetPrimaryStoreLocation');
+	$group->delete('/shopping-locations/{locationId}', '\Grocy\Controllers\StoreIntegrationsApiController:DeleteShoppingLocation');
+	$group->post('/shopping-locations/{locationId}/set-primary', '\Grocy\Controllers\StoreIntegrationsApiController:SetPrimaryShoppingLocation');
 
 	// Recipes
 	$group->post('/recipes/{recipeId}/add-not-fulfilled-products-to-shoppinglist', '\Grocy\Controllers\RecipesApiController:AddNotFulfilledProductsToShoppingList');
