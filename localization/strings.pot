@@ -2635,3 +2635,63 @@ msgstr ""
 
 msgid "Error while creating product"
 msgstr ""
+
+msgid "Store Integration"
+msgstr ""
+
+msgid "This store is integrated with"
+msgstr ""
+
+msgid "External ID"
+msgstr ""
+
+msgid "Primary Location"
+msgstr ""
+
+msgid "Location Details"
+msgstr ""
+
+msgid "Address"
+msgstr ""
+
+msgid "City"
+msgstr ""
+
+msgid "State"
+msgstr ""
+
+msgid "Zip code"
+msgstr ""
+
+msgid "Phone"
+msgstr ""
+
+msgid "Latitude"
+msgstr ""
+
+msgid "Longitude"
+msgstr ""
+
+msgid "Add from Integration"
+msgstr ""
+
+msgid "Add Store from Integration"
+msgstr ""
+
+msgid "Select Integration"
+msgstr ""
+
+msgid "Select..."
+msgstr ""
+
+msgid "Zip Code"
+msgstr ""
+
+msgid "Loading..."
+msgstr ""
+
+msgid "Error searching for stores"
+msgstr ""
+
+msgid "Store added successfully"
+msgstr ""

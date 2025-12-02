@@ -29,6 +29,13 @@
 					href="{{ $U('/shoppinglocation/new?embedded') }}">
 					{{ $__t('Add') }}
 				</a>
+				@if(defined('GROCY_FEATURE_FLAG_STORE_INTEGRATIONS') && GROCY_FEATURE_FLAG_STORE_INTEGRATIONS && !empty($storeIntegrations) && iterator_to_array($storeIntegrations))
+				<button class="btn btn-success responsive-button m-1 mt-md-0 mb-md-0 float-right"
+					data-toggle="modal"
+					data-target="#add-from-integration-modal">
+					<i class="fa-solid fa-link"></i> {{ $__t('Add from Integration') }}
+				</button>
+				@endif
 				<a class="btn btn-outline-secondary m-1 mt-md-0 mb-md-0 float-right"
 					href="{{ $U('/userfields?entity=shopping_locations') }}">
 					{{ $__t('Configure userfields') }}
@@ -134,4 +141,80 @@
 		</table>
 	</div>
 </div>
+
+@if(defined('GROCY_FEATURE_FLAG_STORE_INTEGRATIONS') && GROCY_FEATURE_FLAG_STORE_INTEGRATIONS && !empty($storeIntegrations) && iterator_to_array($storeIntegrations))
+<!-- Add from Integration Modal -->
+<div class="modal fade"
+	id="add-from-integration-modal"
+	tabindex="-1"
+	role="dialog">
+	<div class="modal-dialog modal-lg"
+		role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">{{ $__t('Add Store from Integration') }}</h5>
+				<button type="button"
+					class="close"
+					data-dismiss="modal">
+					<span>&times;</span>
+				</button>
+			</div>
+			<div class="modal-body">
+				<div class="form-group">
+					<label for="integration-select">{{ $__t('Select Integration') }}</label>
+					<select class="form-control"
+						id="integration-select">
+						<option value="">{{ $__t('Select...') }}</option>
+						@foreach($storeIntegrations as $integration)
+						<option value="{{ $integration->id }}">{{ $integration->name }} ({{ $integration->store_type }})</option>
+						@endforeach
+					</select>
+				</div>
+
+				<div id="location-search-section"
+					class="d-none">
+					<div class="form-group">
+						<label for="zip-code-input">{{ $__t('Zip Code') }}</label>
+						<div class="input-group">
+							<input type="text"
+								class="form-control"
+								id="zip-code-input"
+								placeholder="{{ $__t('Enter zip code') }}">
+							<div class="input-group-append">
+								<button class="btn btn-primary"
+									type="button"
+									id="search-stores-button">
+									<i class="fa-solid fa-search"></i> {{ $__t('Search') }}
+								</button>
+							</div>
+						</div>
+					</div>
+
+					<div id="store-results-section"
+						class="d-none">
+						<h6>{{ $__t('Search Results') }}</h6>
+						<div id="store-results-list"
+							class="list-group">
+						</div>
+					</div>
+
+					<div id="store-search-loading"
+						class="d-none text-center py-3">
+						<div class="spinner-border text-primary"
+							role="status">
+							<span class="sr-only">{{ $__t('Loading...') }}</span>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button type="button"
+					class="btn btn-secondary"
+					data-dismiss="modal">{{ $__t('Close') }}</button>
+			</div>
+		</div>
+	</div>
+</div>
+@endif
+
 @stop

@@ -534,7 +534,7 @@ class StockController extends BaseController
 		else
 		{
 			return $this->renderPage($response, 'shoppinglocationform', [
-				'shoppingLocation' => $this->getDatabase()->shopping_locations($args['shoppingLocationId']),
+				'shoppingLocation' => $this->getDatabase()->shopping_locations_enhanced()->where('id = :1', $args['shoppingLocationId'])->fetch(),
 				'mode' => 'edit',
 				'userfields' => $this->getUserfieldsService()->GetFields('shopping_locations')
 			]);
@@ -552,11 +552,27 @@ class StockController extends BaseController
 			$shoppingLocations = $this->getDatabase()->shopping_locations()->where('active = 1')->orderBy('name', 'COLLATE NOCASE');
 		}
 
-		return $this->renderPage($response, 'shoppinglocations', [
+		$viewData = [
 			'shoppinglocations' => $shoppingLocations,
 			'userfields' => $this->getUserfieldsService()->GetFields('shopping_locations'),
 			'userfieldValues' => $this->getUserfieldsService()->GetAllValues('shopping_locations')
-		]);
+		];
+
+		// Add store integrations if feature is enabled
+		if (defined('GROCY_FEATURE_FLAG_STORE_INTEGRATIONS') && GROCY_FEATURE_FLAG_STORE_INTEGRATIONS)
+		{
+			try
+			{
+				$viewData['storeIntegrations'] = $this->getStoreIntegrationsService()->GetActive();
+			}
+			catch (\Exception $ex)
+			{
+				// Store integrations table might not exist yet
+				$viewData['storeIntegrations'] = [];
+			}
+		}
+
+		return $this->renderPage($response, 'shoppinglocations', $viewData);
 	}
 
 	public function StockEntryEditForm(Request $request, Response $response, array $args)

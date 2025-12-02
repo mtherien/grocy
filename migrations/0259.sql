@@ -97,6 +97,7 @@ SELECT
     sl.id,
     sl.name,
     sl.description,
+    sl.active,
     sl.store_integration_id,
     sl.external_location_id,
     sl.address,
