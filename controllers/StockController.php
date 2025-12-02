@@ -686,4 +686,50 @@ class StockController extends BaseController
 			'quantityUnitConversionsResolved' => $quantityUnitConversionsResolved
 		]);
 	}
+
+	public function ShopMode(Request $request, Response $response, array $args)
+	{
+		$listId = $args['listId'];
+
+		// Get shopping list
+		$shoppingList = $this->getDatabase()->shopping_lists()->where('id = :1', $listId)->fetch();
+		if (!$shoppingList)
+		{
+			throw new \Exception('Shopping list not found');
+		}
+
+		// Get integrated shopping locations
+		$integratedLocations = $this->getDatabase()->shopping_locations()
+			->where('store_integration_id IS NOT NULL')
+			->where('active = 1')
+			->orderBy('name', 'COLLATE NOCASE');
+
+		// Get selected location (from shop mode state or last used)
+		$selectedLocationId = $shoppingList->shop_mode_location_id;
+		if (!$selectedLocationId && $shoppingList->store_integration_id)
+		{
+			// Try to find primary location for this integration
+			$primaryLocation = $this->getDatabase()->shopping_locations()
+				->where('store_integration_id = :1', $shoppingList->store_integration_id)
+				->where('is_primary = 1')
+				->fetch();
+
+			if ($primaryLocation)
+			{
+				$selectedLocationId = $primaryLocation->id;
+			}
+		}
+
+		// Get default stock location from user settings
+		$userSettings = $this->getUsersService()->GetUserSettings(GROCY_USER_ID);
+
+		return $this->renderPage($response, 'shopmode', [
+			'listId' => $listId,
+			'shoppingList' => $shoppingList,
+			'integratedLocations' => $integratedLocations,
+			'selectedLocationId' => $selectedLocationId,
+			'defaultStockLocationId' => $userSettings['stock_default_location_id'],
+			'userSettings' => $userSettings
+		]);
+	}
 }

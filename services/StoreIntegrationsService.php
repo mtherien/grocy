@@ -716,4 +716,169 @@ class StoreIntegrationsService extends BaseService
 		$integrationRow = $this->getDatabase()->store_integrations()->where('id = :1', $id)->fetch();
 		return $integrationRow !== null;
 	}
+
+	/**
+	 * Fetch and save metadata for all products on a shopping list
+	 *
+	 * @param int $integrationId The store integration ID
+	 * @param int $shoppingLocationId The shopping location ID
+	 * @param int $listId The shopping list ID
+	 * @return array Results array with success/failure per product
+	 * @throws \Exception If integration or location not found
+	 */
+	public function FetchMetadataForShoppingList($integrationId, $shoppingLocationId, $listId)
+	{
+		if (!$this->IntegrationExists($integrationId))
+		{
+			throw new \Exception('Store integration does not exist');
+		}
+
+		// Get shopping location and verify it belongs to this integration
+		$location = $this->getDatabase()->shopping_locations()
+			->where('id = :1', $shoppingLocationId)
+			->fetch();
+
+		if (!$location)
+		{
+			throw new \Exception('Shopping location does not exist');
+		}
+
+		if ($location->store_integration_id != $integrationId)
+		{
+			throw new \Exception('Shopping location does not belong to this integration');
+		}
+
+		// Get all unique products on the shopping list
+		$listItems = $this->getDatabase()->shopping_list()
+			->where('shopping_list_id = :1', $listId)
+			->where('product_id IS NOT NULL');
+
+		$uniqueProductIds = [];
+		foreach ($listItems as $item)
+		{
+			if (!in_array($item->product_id, $uniqueProductIds))
+			{
+				$uniqueProductIds[] = $item->product_id;
+			}
+		}
+
+		if (empty($uniqueProductIds))
+		{
+			return [
+				'total' => 0,
+				'succeeded' => 0,
+				'failed' => 0,
+				'results' => []
+			];
+		}
+
+		// Get the store service plugin
+		$storeService = $this->GetStoreServiceForIntegration($integrationId);
+
+		$results = [];
+		$successCount = 0;
+		$failCount = 0;
+
+		foreach ($uniqueProductIds as $productId)
+		{
+			try
+			{
+				$product = $this->getDatabase()->products()->where('id = :1', $productId)->fetch();
+				if (!$product)
+				{
+					$results[] = [
+						'product_id' => $productId,
+						'success' => false,
+						'error' => 'Product not found'
+					];
+					$failCount++;
+					continue;
+				}
+
+				// Try to lookup product metadata from store API
+				$metadata = $storeService->LookupProductMetadata($integrationId, $productId, $location->external_location_id);
+
+				if ($metadata && !empty($metadata))
+				{
+					// Save metadata
+					$this->SaveProductMetadata($productId, $shoppingLocationId, $metadata);
+
+					$results[] = [
+						'product_id' => $productId,
+						'product_name' => $product->name,
+						'success' => true,
+						'aisle' => $metadata['aisle'] ?? null,
+						'department' => $metadata['department'] ?? null
+					];
+					$successCount++;
+				}
+				else
+				{
+					// No metadata found
+					$results[] = [
+						'product_id' => $productId,
+						'product_name' => $product->name,
+						'success' => false,
+						'error' => 'No metadata available from store'
+					];
+					$failCount++;
+				}
+			}
+			catch (\Exception $ex)
+			{
+				$results[] = [
+					'product_id' => $productId,
+					'success' => false,
+					'error' => $ex->getMessage()
+				];
+				$failCount++;
+			}
+		}
+
+		return [
+			'total' => count($uniqueProductIds),
+			'succeeded' => $successCount,
+			'failed' => $failCount,
+			'results' => $results
+		];
+	}
+
+	/**
+	 * Save product metadata for a shopping location
+	 *
+	 * @param int $productId The product ID
+	 * @param int $shoppingLocationId The shopping location ID
+	 * @param array $metadata Metadata array with keys: aisle, shelf, department, etc.
+	 */
+	public function SaveProductMetadata($productId, $shoppingLocationId, $metadata)
+	{
+		$existing = $this->getDatabase()->product_store_metadata()
+			->where('product_id = :1', $productId)
+			->where('shopping_location_id = :2', $shoppingLocationId)
+			->fetch();
+
+		$data = [
+			'product_id' => $productId,
+			'shopping_location_id' => $shoppingLocationId,
+			'external_product_id' => $metadata['external_product_id'] ?? null,
+			'aisle' => $metadata['aisle'] ?? null,
+			'shelf' => $metadata['shelf'] ?? null,
+			'department' => $metadata['department'] ?? null,
+			'category' => $metadata['category'] ?? null,
+			'price' => $metadata['price'] ?? null,
+			'price_unit' => $metadata['price_unit'] ?? null,
+			'availability' => $metadata['availability'] ?? null,
+			'metadata_json' => json_encode($metadata['raw_data'] ?? $metadata),
+			'last_updated' => date('Y-m-d H:i:s')
+		];
+
+		if ($existing)
+		{
+			$existing->update($data);
+		}
+		else
+		{
+			$this->getDatabase()->product_store_metadata()->insert($data);
+		}
+	}
 }

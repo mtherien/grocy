@@ -927,4 +927,246 @@ class StockApiController extends BaseApiController
 			return $this->GenericErrorResponse($response, $ex->getMessage());
 		}
 	}
+
+	// Shop Mode Endpoints
+
+	public function StartShopMode(Request $request, Response $response, array $args)
+	{
+		User::checkPermission($request, User::PERMISSION_SHOPPINGLIST);
+
+		try
+		{
+			$requestBody = $this->GetParsedAndFilteredRequestBody($request);
+
+			if (!isset($requestBody['shopping_location_id']))
+			{
+				return $this->GenericErrorResponse($response, 'shopping_location_id is required');
+			}
+
+			$listId = intval($args['listId']);
+			$shoppingLocationId = intval($requestBody['shopping_location_id']);
+
+			// Verify shopping location has integration
+			$location = $this->getDatabase()->shopping_locations()
+				->where('id = :1', $shoppingLocationId)
+				->fetch();
+
+			if (!$location)
+			{
+				return $this->GenericErrorResponse($response, 'Shopping location not found');
+			}
+
+			if (empty($location->store_integration_id))
+			{
+				return $this->GenericErrorResponse($response, 'Shopping location does not have store integration');
+			}
+
+			// Fetch metadata for all items on the list
+			$metadataResults = $this->getStoreIntegrationsService()->FetchMetadataForShoppingList(
+				$location->store_integration_id,
+				$shoppingLocationId,
+				$listId
+			);
+
+			// Update shopping list with shop mode state
+			$shoppingList = $this->getDatabase()->shopping_lists()->where('id = :1', $listId)->fetch();
+			if ($shoppingList)
+			{
+				$shoppingList->update([
+					'shop_mode_active' => 1,
+					'shop_mode_location_id' => $shoppingLocationId,
+					'store_integration_id' => $location->store_integration_id
+				]);
+			}
+
+			return $this->ApiResponse($response, [
+				'success' => true,
+				'metadata_results' => $metadataResults,
+				'redirect_url' => '/shoppinglist/' . $listId . '/shop'
+			]);
+		}
+		catch (\Exception $ex)
+		{
+			return $this->GenericErrorResponse($response, $ex->getMessage());
+		}
+	}
+
+	public function GetShopModeItems(Request $request, Response $response, array $args)
+	{
+		User::checkPermission($request, User::PERMISSION_SHOPPINGLIST);
+
+		try
+		{
+			$listId = intval($args['listId']);
+			$shoppingLocationId = $request->getQueryParams()['location_id'] ?? null;
+
+			if (!$shoppingLocationId)
+			{
+				return $this->GenericErrorResponse($response, 'location_id query parameter is required');
+			}
+
+			$items = $this->getStockService()->GetShoppingListItemsWithMetadata($listId, intval($shoppingLocationId));
+
+			return $this->ApiResponse($response, $items);
+		}
+		catch (\Exception $ex)
+		{
+			return $this->GenericErrorResponse($response, $ex->getMessage());
+		}
+	}
+
+	public function HandleShopModeScan(Request $request, Response $response, array $args)
+	{
+		User::checkPermission($request, User::PERMISSION_SHOPPINGLIST);
+
+		try
+		{
+			$requestBody = $this->GetParsedAndFilteredRequestBody($request);
+
+			if (!isset($requestBody['barcode']))
+			{
+				return $this->GenericErrorResponse($response, 'barcode is required');
+			}
+
+			$listId = intval($args['listId']);
+			$barcode = $requestBody['barcode'];
+
+			// Resolve barcode to product
+			try
+			{
+				$productId = $this->getStockService()->GetProductIdFromBarcode($barcode);
+			}
+			catch (\Exception $ex)
+			{
+				// Barcode not found
+				return $this->ApiResponse($response, [
+					'found' => false,
+					'barcode' => $barcode
+				]);
+			}
+
+			// Check if product is on the shopping list
+			$existingItem = $this->getDatabase()->shopping_list()
+				->where('shopping_list_id = :1', $listId)
+				->where('product_id = :2', $productId)
+				->fetch();
+
+			if ($existingItem)
+			{
+				// Product is on list - mark as done
+				$existingItem->update(['done' => 1]);
+
+				// Get product details
+				$product = $this->getDatabase()->products()->where('id = :1', $productId)->fetch();
+
+				return $this->ApiResponse($response, [
+					'on_list' => true,
+					'action' => 'marked_done',
+					'item' => [
+						'id' => $existingItem->id,
+						'product_id' => $productId,
+						'product_name' => $product->name,
+						'amount' => $existingItem->amount,
+						'picture_file_name' => $product->picture_file_name
+					]
+				]);
+			}
+			else
+			{
+				// Product not on list - return product details for confirmation
+				$product = $this->getDatabase()->products()->where('id = :1', $productId)->fetch();
+
+				return $this->ApiResponse($response, [
+					'on_list' => false,
+					'action' => 'confirm_add',
+					'product' => [
+						'id' => $productId,
+						'name' => $product->name,
+						'qu_id_purchase' => $product->qu_id_purchase,
+						'picture_file_name' => $product->picture_file_name
+					]
+				]);
+			}
+		}
+		catch (\Exception $ex)
+		{
+			return $this->GenericErrorResponse($response, $ex->getMessage());
+		}
+	}
+
+	public function AddScannedToList(Request $request, Response $response, array $args)
+	{
+		User::checkPermission($request, User::PERMISSION_SHOPPINGLIST_ITEMS_ADD);
+
+		try
+		{
+			$requestBody = $this->GetParsedAndFilteredRequestBody($request);
+
+			if (!isset($requestBody['product_id']))
+			{
+				return $this->GenericErrorResponse($response, 'product_id is required');
+			}
+
+			$listId = intval($args['listId']);
+			$productId = intval($requestBody['product_id']);
+			$amount = floatval($requestBody['amount'] ?? 1);
+			$note = $requestBody['note'] ?? null;
+
+			$itemId = $this->getStockService()->AddAndMarkDone($listId, $productId, $amount, $note);
+
+			return $this->ApiResponse($response, [
+				'success' => true,
+				'item_id' => $itemId
+			]);
+		}
+		catch (\Exception $ex)
+		{
+			return $this->GenericErrorResponse($response, $ex->getMessage());
+		}
+	}
+
+	public function BulkAddToInventory(Request $request, Response $response, array $args)
+	{
+		User::checkPermission($request, User::PERMISSION_STOCK_PURCHASE);
+
+		try
+		{
+			$requestBody = $this->GetParsedAndFilteredRequestBody($request);
+			$listId = intval($args['listId']);
+
+			// Get defaults from request
+			$defaults = [
+				'location_id' => $requestBody['location_id'] ?? null,
+				'purchased_date' => $requestBody['purchased_date'] ?? date('Y-m-d'),
+				'best_before_date' => $requestBody['best_before_date'] ?? null,
+				'price' => $requestBody['price'] ?? null
+			];
+
+			// Get item-specific overrides
+			$itemOverrides = $requestBody['item_overrides'] ?? [];
+
+			$result = $this->getStockService()->BulkAddCheckedItemsToStock($listId, $defaults, $itemOverrides);
+
+			// Update shop mode state
+			$shoppingList = $this->getDatabase()->shopping_lists()->where('id = :1', $listId)->fetch();
+			if ($shoppingList)
+			{
+				$shoppingList->update([
+					'shop_mode_active' => 0,
+					'shop_mode_location_id' => null
+				]);
+			}
+
+			return $this->ApiResponse($response, $result);
+		}
+		catch (\Exception $ex)
+		{
+			return $this->GenericErrorResponse($response, $ex->getMessage());
+		}
+	}
+
+	private function getStoreIntegrationsService()
+	{
+		return StoreIntegrationsService::getInstance();
+	}
 }

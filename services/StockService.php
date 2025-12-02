@@ -1818,4 +1818,274 @@ class StockService extends BaseService
 		$shoppingListRow = $this->getDatabase()->shopping_lists()->where('id = :1', $listId)->fetch();
 		return $shoppingListRow !== null;
 	}
+
+	public function GetShoppingListItemsWithMetadata($listId, $shoppingLocationId)
+	{
+		if (!$this->ShoppingListExists($listId))
+		{
+			throw new \Exception('Shopping list does not exist');
+		}
+
+		// Get all items from the shopping list with product and metadata
+		$items = $this->getDatabase()->shopping_list()
+			->where('shopping_list_id = :1', $listId);
+
+		$inStore = [];
+		$notInStore = [];
+
+		foreach ($items as $item)
+		{
+			// Skip notes without products
+			if (empty($item->product_id))
+			{
+				continue;
+			}
+
+			// Get product details
+			$product = $this->getDatabase()->products()->where('id = :1', $item->product_id)->fetch();
+			if (!$product)
+			{
+				continue;
+			}
+
+			// Get metadata for this shopping location
+			$metadata = $this->getDatabase()->product_store_metadata()
+				->where('product_id = :1', $item->product_id)
+				->where('shopping_location_id = :2', $shoppingLocationId)
+				->fetch();
+
+			// Get quantity unit
+			$qu = $this->getDatabase()->quantity_units()->where('id = :1', $item->qu_id)->fetch();
+
+			// Build item data
+			$itemData = [
+				'id' => $item->id,
+				'product_id' => $item->product_id,
+				'product_name' => $product->name,
+				'amount' => $item->amount,
+				'qu_id' => $item->qu_id,
+				'qu_name' => $qu ? $qu->name : '',
+				'done' => $item->done,
+				'note' => $item->note,
+				'picture_file_name' => $product->picture_file_name
+			];
+
+			if ($metadata)
+			{
+				// Item has store metadata
+				$itemData['aisle'] = $metadata->aisle;
+				$itemData['shelf'] = $metadata->shelf;
+				$itemData['department'] = $metadata->department;
+				$itemData['price'] = $metadata->price;
+
+				// Group by department and aisle
+				$groupKey = $metadata->department . ' - Aisle ' . $metadata->aisle;
+				if (!isset($inStore[$groupKey]))
+				{
+					$inStore[$groupKey] = [
+						'department' => $metadata->department,
+						'aisle' => $metadata->aisle,
+						'items' => []
+					];
+				}
+				$inStore[$groupKey]['items'][] = $itemData;
+			}
+			else
+			{
+				// Item not found in store
+				$notInStore[] = $itemData;
+			}
+		}
+
+		// Sort in-store groups by aisle (numerical then alphabetical)
+		uksort($inStore, function ($a, $b) {
+			preg_match('/Aisle (\d+|[A-Z]+)/', $a, $matchesA);
+			preg_match('/Aisle (\d+|[A-Z]+)/', $b, $matchesB);
+
+			$aisleA = $matchesA[1] ?? $a;
+			$aisleB = $matchesB[1] ?? $b;
+
+			// Try numerical comparison first
+			if (is_numeric($aisleA) && is_numeric($aisleB))
+			{
+				return (int)$aisleA - (int)$aisleB;
+			}
+
+			// Fall back to alphabetical
+			return strcmp($aisleA, $aisleB);
+		});
+
+		return [
+			'in_store' => array_values($inStore),
+			'not_in_store' => $notInStore
+		];
+	}
+
+	public function AddAndMarkDone($listId, $productId, $amount = 1, $note = null, $quId = null)
+	{
+		if (!$this->ShoppingListExists($listId))
+		{
+			throw new \Exception('Shopping list does not exist');
+		}
+
+		if (!$this->ProductExists($productId))
+		{
+			throw new \Exception('Product does not exist');
+		}
+
+		// Check if product already on list
+		$existingItem = $this->getDatabase()->shopping_list()
+			->where('shopping_list_id = :1', $listId)
+			->where('product_id = :2', $productId)
+			->fetch();
+
+		if ($existingItem)
+		{
+			// Update existing item
+			$existingItem->update([
+				'amount' => $existingItem->amount + $amount,
+				'done' => 1,
+				'note' => $note ?? $existingItem->note
+			]);
+			return $existingItem->id;
+		}
+		else
+		{
+			// Add new item and mark as done
+			$product = $this->getDatabase()->products()->where('id = :1', $productId)->fetch();
+			$insertData = [
+				'shopping_list_id' => $listId,
+				'product_id' => $productId,
+				'amount' => $amount,
+				'done' => 1,
+				'note' => $note,
+				'qu_id' => $quId ?? $product->qu_id_purchase
+			];
+
+			$this->getDatabase()->shopping_list()->insert($insertData);
+			return $this->getDatabase()->lastInsertId();
+		}
+	}
+
+	public function GetCheckedItemsForInventory($listId)
+	{
+		if (!$this->ShoppingListExists($listId))
+		{
+			throw new \Exception('Shopping list does not exist');
+		}
+
+		$items = $this->getDatabase()->shopping_list()
+			->where('shopping_list_id = :1', $listId)
+			->where('done = 1');
+
+		$result = [];
+		foreach ($items as $item)
+		{
+			if (empty($item->product_id))
+			{
+				continue; // Skip notes
+			}
+
+			$product = $this->getDatabase()->products()->where('id = :1', $item->product_id)->fetch();
+			if (!$product)
+			{
+				continue;
+			}
+
+			$qu = $this->getDatabase()->quantity_units()->where('id = :1', $item->qu_id)->fetch();
+
+			$result[] = [
+				'id' => $item->id,
+				'product_id' => $item->product_id,
+				'product_name' => $product->name,
+				'amount' => $item->amount,
+				'qu_id' => $item->qu_id,
+				'qu_name' => $qu ? $qu->name : '',
+				'location_id' => $product->location_id,
+				'picture_file_name' => $product->picture_file_name
+			];
+		}
+
+		return $result;
+	}
+
+	public function BulkAddCheckedItemsToStock($listId, $defaults, $itemOverrides = [])
+	{
+		if (!$this->ShoppingListExists($listId))
+		{
+			throw new \Exception('Shopping list does not exist');
+		}
+
+		$checkedItems = $this->GetCheckedItemsForInventory($listId);
+		if (empty($checkedItems))
+		{
+			throw new \Exception('No checked items to add to inventory');
+		}
+
+		// Generate shared transaction_id for grouping
+		$transactionId = $this->generateTransactionId();
+
+		$results = [];
+		$successCount = 0;
+		$failCount = 0;
+
+		foreach ($checkedItems as $item)
+		{
+			try
+			{
+				// Check for item-specific overrides
+				$locationId = $itemOverrides[$item['id']]['location_id'] ?? $defaults['location_id'] ?? $item['location_id'];
+				$amount = $itemOverrides[$item['id']]['amount'] ?? $item['amount'];
+				$purchasedDate = $itemOverrides[$item['id']]['purchased_date'] ?? $defaults['purchased_date'] ?? date('Y-m-d');
+				$bestBeforeDate = $itemOverrides[$item['id']]['best_before_date'] ?? $defaults['best_before_date'] ?? null;
+				$price = $itemOverrides[$item['id']]['price'] ?? $defaults['price'] ?? null;
+
+				// Add to stock using existing method
+				$this->AddProduct(
+					$item['product_id'],
+					$amount,
+					$bestBeforeDate,
+					$transactionId,
+					$purchasedDate,
+					$price,
+					$locationId,
+					null, // shoppingLocationId
+					null, // transactionType (defaults to purchase)
+					null  // stockLabelType
+				);
+
+				// Remove from shopping list
+				$this->getDatabase()->shopping_list()->where('id = :1', $item['id'])->delete();
+
+				$results[] = [
+					'item_id' => $item['id'],
+					'product_id' => $item['product_id'],
+					'product_name' => $item['product_name'],
+					'success' => true
+				];
+				$successCount++;
+			}
+			catch (\Exception $ex)
+			{
+				$results[] = [
+					'item_id' => $item['id'],
+					'product_id' => $item['product_id'],
+					'product_name' => $item['product_name'],
+					'success' => false,
+					'error' => $ex->getMessage()
+				];
+				$failCount++;
+			}
+		}
+
+		return [
+			'transaction_id' => $transactionId,
+			'summary' => [
+				'total' => count($checkedItems),
+				'succeeded' => $successCount,
+				'failed' => $failCount
+			],
+			'results' => $results
+		];
+	}
 }

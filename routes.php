@@ -71,6 +71,7 @@ $app->group('', function (RouteCollectorProxy $group)
 
 	// Shopping list routes
 	$group->get('/shoppinglist', '\Grocy\Controllers\StockController:ShoppingList');
+	$group->get('/shoppinglist/{listId}/shop', '\Grocy\Controllers\StockController:ShopMode');
 	$group->get('/shoppinglistitem/{itemId}', '\Grocy\Controllers\StockController:ShoppingListItemEditForm');
 	$group->get('/shoppinglist/{listId}', '\Grocy\Controllers\StockController:ShoppingListEditForm');
 	$group->get('/shoppinglistsettings', '\Grocy\Controllers\StockController:ShoppingListSettings');
@@ -211,6 +212,13 @@ $app->group('/api', function (RouteCollectorProxy $group)
 	$group->post('/stock/shoppinglist/clear', '\Grocy\Controllers\StockApiController:ClearShoppingList');
 	$group->post('/stock/shoppinglist/add-product', '\Grocy\Controllers\StockApiController:AddProductToShoppingList');
 	$group->post('/stock/shoppinglist/remove-product', '\Grocy\Controllers\StockApiController:RemoveProductFromShoppingList');
+
+	// Shop mode
+	$group->post('/shopping-list/{listId}/shop-mode/start', '\Grocy\Controllers\StockApiController:StartShopMode');
+	$group->get('/shopping-list/{listId}/shop-mode/items', '\Grocy\Controllers\StockApiController:GetShopModeItems');
+	$group->post('/shopping-list/{listId}/shop-mode/scan', '\Grocy\Controllers\StockApiController:HandleShopModeScan');
+	$group->post('/shopping-list/{listId}/shop-mode/add-scanned', '\Grocy\Controllers\StockApiController:AddScannedToList');
+	$group->post('/shopping-list/{listId}/shop-mode/bulk-add-to-inventory', '\Grocy\Controllers\StockApiController:BulkAddToInventory');
 
 	// Store integrations (specific routes before parameterized routes)
 	$group->get('/store-integrations', '\Grocy\Controllers\StoreIntegrationsApiController:GetAll');

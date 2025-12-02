@@ -987,3 +987,96 @@ $('#store-product-search-modal').on('show.bs.modal', function()
 	$('#store-search-results').addClass('d-none');
 	$('#store-search-error').addClass('d-none');
 });
+
+// Start Shop Mode
+$('#start-shop-mode-button').on('click', function(e)
+{
+	e.preventDefault();
+
+	var listId = $('#selected-shopping-list').val();
+
+	// Check if there are any integrated stores
+	var integratedStores = [];
+	$('#store-search-integration option').each(function()
+	{
+		var $option = $(this);
+		if ($option.val() && $option.val() !== '')
+		{
+			integratedStores.push({
+				id: $option.attr('data-location-id'),
+				integrationId: $option.attr('data-integration-id'),
+				name: $option.text()
+			});
+		}
+	});
+
+	if (integratedStores.length === 0)
+	{
+		toastr.error(__t('No integrated stores available. Please configure a store integration first.'));
+		return;
+	}
+
+	// If only one store, auto-select it
+	if (integratedStores.length === 1)
+	{
+		startShopModeWithStore(listId, integratedStores[0].id);
+		return;
+	}
+
+	// Multiple stores - show selection
+	var optionsHtml = '<option value="">' + __t('Select a store') + '</option>';
+	integratedStores.forEach(function(store)
+	{
+		optionsHtml += '<option value="' + store.id + '">' + store.name + '</option>';
+	});
+
+	bootbox.prompt({
+		title: __t('Select Store'),
+		inputType: 'select',
+		inputOptions: optionsHtml,
+		callback: function(locationId)
+		{
+			if (locationId)
+			{
+				startShopModeWithStore(listId, locationId);
+			}
+		}
+	});
+});
+
+function startShopModeWithStore(listId, shoppingLocationId)
+{
+	// Show loading
+	bootbox.dialog({
+		message: '<div class="text-center"><div class="spinner-border" role="status"></div><p class="mt-2">' + __t('Fetching store data') + '...</p></div>',
+		closeButton: false
+	});
+
+	// Call API to start shop mode and fetch metadata
+	Grocy.Api.Post('shopping-list/' + listId + '/shop-mode/start',
+		{shopping_location_id: parseInt(shoppingLocationId)},
+		function(result)
+		{
+			bootbox.hideAll();
+
+			// Show summary
+			var summary = result.metadata_results;
+			if (summary.failed > 0)
+			{
+				toastr.warning(__t('Some items not found in store') + ': ' + summary.failed + '/' + summary.total);
+			}
+			else
+			{
+				toastr.success(__t('Store data loaded for all items'));
+			}
+
+			// Navigate to shop mode
+			window.location.href = result.redirect_url;
+		},
+		function(xhr)
+		{
+			bootbox.hideAll();
+			toastr.error(__t('Error starting shop mode') + ': ' + (xhr.responseJSON?.error_message || xhr.statusText));
+		}
+	);
+}

@@ -97,7 +97,15 @@ $listItem->last_price_total = $listItem->price * $listItem->amount;
 						</a>
 						@if(defined('GROCY_FEATURE_FLAG_STORE_INTEGRATIONS') && GROCY_FEATURE_FLAG_STORE_INTEGRATIONS && !empty($storeIntegrations) && iterator_to_array($storeIntegrations))
 						<div class="dropdown-divider"></div>
-						<h6 class="dropdown-header">{{ $__t('Send to store') }}</h6>
+						<a id="start-shop-mode-button"
+							class="dropdown-item @if($listItems->count() == 0) disabled @endif"
+							href="#">
+							<i class="fa-solid fa-shopping-cart"></i> {{ $__t('Shop List') }}
+						</a>
+						@endif
+						@if(defined('GROCY_FEATURE_FLAG_STORE_INTEGRATIONS') && GROCY_FEATURE_FLAG_STORE_INTEGRATIONS && !empty($storeIntegrations) && iterator_to_array($storeIntegrations))
+						<div class="dropdown-divider"></div>
+						<h6 class="dropdown-header">{{ $__t('Add To Cart') }}</h6>
 						@foreach($storeIntegrations as $integration)
 							@php
 								$integrationLocations = array_filter($storeLocations, function($loc) use ($integration) {
