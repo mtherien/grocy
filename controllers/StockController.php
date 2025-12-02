@@ -434,7 +434,7 @@ class StockController extends BaseController
 				// Get store locations for each integration
 				foreach ($storeIntegrations as $integration)
 				{
-					$locations = $this->getStoreIntegrationsService()->GetStoreLocations($integration->id);
+					$locations = $this->getStoreIntegrationsService()->GetShoppingLocationsForIntegration($integration->id);
 					foreach ($locations as $location)
 					{
 						$storeLocations[] = $location;
