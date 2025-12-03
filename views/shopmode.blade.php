@@ -392,7 +392,7 @@ body {
 						<div class="form-group col-md-6">
 							<label for="bulk-location-id">{{ $__t('Location') }}</label>
 							<select id="bulk-location-id" class="form-control" required>
-								@foreach($this->getDatabase()->locations()->where('active = 1')->orderBy('name', 'COLLATE NOCASE') as $location)
+								@foreach($stockLocations as $location)
 									<option value="{{ $location->id }}" @if($location->id == $defaultStockLocationId) selected @endif>
 										{{ $location->name }}
 									</option>

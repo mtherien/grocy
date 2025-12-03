@@ -723,12 +723,18 @@ class StockController extends BaseController
 		// Get default stock location from user settings
 		$userSettings = $this->getUsersService()->GetUserSettings(GROCY_USER_ID);
 
+		// Get active stock locations for the inventory modal
+		$stockLocations = $this->getDatabase()->locations()
+			->where('active = 1')
+			->orderBy('name', 'COLLATE NOCASE');
+
 		return $this->renderPage($response, 'shopmode', [
 			'listId' => $listId,
 			'shoppingList' => $shoppingList,
 			'integratedLocations' => $integratedLocations,
 			'selectedLocationId' => $selectedLocationId,
-			'defaultStockLocationId' => $userSettings['stock_default_location_id'],
+			'defaultStockLocationId' => $userSettings['stock_default_location_id'] ?? null,
+			'stockLocations' => $stockLocations,
 			'userSettings' => $userSettings
 		]);
 	}

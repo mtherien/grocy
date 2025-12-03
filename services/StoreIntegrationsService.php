@@ -735,6 +735,39 @@ class StoreIntegrationsService extends BaseService
 				'total' => 0,
 				'succeeded' => 0,
 				'failed' => 0,
+				'skipped' => 0,
+				'results' => []
+			];
+		}
+
+		// Filter out products that already have metadata for this shopping location
+		$productsNeedingMetadata = [];
+		$skippedCount = 0;
+		foreach ($uniqueProductIds as $productId)
+		{
+			$existingMetadata = $this->getDatabase()->product_store_metadata()
+				->where('product_id = :1', $productId)
+				->where('shopping_location_id = :2', $shoppingLocationId)
+				->fetch();
+
+			if (!$existingMetadata)
+			{
+				$productsNeedingMetadata[] = $productId;
+			}
+			else
+			{
+				$skippedCount++;
+			}
+		}
+
+		// If all products already have metadata, return early
+		if (empty($productsNeedingMetadata))
+		{
+			return [
+				'total' => count($uniqueProductIds),
+				'succeeded' => 0,
+				'failed' => 0,
+				'skipped' => $skippedCount,
 				'results' => []
 			];
 		}
@@ -746,7 +779,7 @@ class StoreIntegrationsService extends BaseService
 		$successCount = 0;
 		$failCount = 0;
 
-		foreach ($uniqueProductIds as $productId)
+		foreach ($productsNeedingMetadata as $productId)
 		{
 			try
 			{
@@ -763,7 +796,7 @@ class StoreIntegrationsService extends BaseService
 				}
 
 				// Try to lookup product metadata from store API
-				$metadata = $storeService->LookupProductMetadata($integrationId, $productId, $location->external_location_id);
+				$metadata = $storeService->LookupProductMetadata($integrationId, $productId, $shoppingLocationId);
 
 				if ($metadata && !empty($metadata))
 				{
@@ -806,6 +839,7 @@ class StoreIntegrationsService extends BaseService
 			'total' => count($uniqueProductIds),
 			'succeeded' => $successCount,
 			'failed' => $failCount,
+			'skipped' => $skippedCount,
 			'results' => $results
 		];
 	}

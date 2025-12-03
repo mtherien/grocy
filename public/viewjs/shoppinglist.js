@@ -1024,16 +1024,18 @@ $('#start-shop-mode-button').on('click', function(e)
 	}
 
 	// Multiple stores - show selection
-	var optionsHtml = '<option value="">' + __t('Select a store') + '</option>';
+	var inputOptions = [
+		{ text: __t('Select a store'), value: '' }
+	];
 	integratedStores.forEach(function(store)
 	{
-		optionsHtml += '<option value="' + store.id + '">' + store.name + '</option>';
+		inputOptions.push({ text: store.name, value: store.id });
 	});
 
 	bootbox.prompt({
 		title: __t('Select Store'),
 		inputType: 'select',
-		inputOptions: optionsHtml,
+		inputOptions: inputOptions,
 		callback: function(locationId)
 		{
 			if (locationId)
@@ -1061,13 +1063,32 @@ function startShopModeWithStore(listId, shoppingLocationId)
 
 			// Show summary
 			var summary = result.metadata_results;
+			var message = '';
+
+			if (summary.succeeded > 0)
+			{
+				message = summary.succeeded + ' ' + __t('items fetched');
+			}
+
+			if (summary.skipped > 0)
+			{
+				if (message) message += ', ';
+				message += summary.skipped + ' ' + __t('already had data');
+			}
+
 			if (summary.failed > 0)
 			{
-				toastr.warning(__t('Some items not found in store') + ': ' + summary.failed + '/' + summary.total);
+				if (message) message += ', ';
+				message += summary.failed + ' ' + __t('not found');
+				toastr.warning(__t('Store data loaded') + ': ' + message);
+			}
+			else if (summary.succeeded > 0 || summary.skipped > 0)
+			{
+				toastr.success(__t('Store data loaded') + ': ' + message);
 			}
 			else
 			{
-				toastr.success(__t('Store data loaded for all items'));
+				toastr.info(__t('No items needed metadata'));
 			}
 
 			// Navigate to shop mode

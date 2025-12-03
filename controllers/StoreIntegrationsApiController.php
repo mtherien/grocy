@@ -298,6 +298,50 @@ class StoreIntegrationsApiController extends BaseApiController
 					$existingProduct->update(['shopping_location_id' => $shoppingLocationId]);
 				}
 
+				// Save/update metadata to product_store_metadata table if shopping location is provided
+				if ($shoppingLocationId && (!empty($aisle) || !empty($shelf) || !empty($department) || !empty($price)))
+				{
+					$metadataData = [
+						'product_id' => $existingProduct->id,
+						'shopping_location_id' => $shoppingLocationId
+					];
+
+					if (!empty($aisle))
+					{
+						$metadataData['aisle'] = $aisle;
+					}
+
+					if (!empty($shelf))
+					{
+						$metadataData['shelf'] = $shelf;
+					}
+
+					if (!empty($department))
+					{
+						$metadataData['department'] = $department;
+					}
+
+					if (!empty($price))
+					{
+						$metadataData['price'] = $price;
+					}
+
+					// Check if metadata already exists for this product/location
+					$existingMetadata = $this->getDatabase()->product_store_metadata()
+						->where('product_id = :1', $existingProduct->id)
+						->where('shopping_location_id = :2', $shoppingLocationId)
+						->fetch();
+
+					if ($existingMetadata)
+					{
+						$existingMetadata->update($metadataData);
+					}
+					else
+					{
+						$this->getDatabase()->product_store_metadata()->insert($metadataData);
+					}
+				}
+
 				// Product already exists, return its ID
 				return $this->ApiResponse($response, ['product_id' => $existingProduct->id]);
 			}
@@ -369,6 +413,50 @@ class StoreIntegrationsApiController extends BaseApiController
 					'product_id' => $productId,
 					'barcode' => $upc
 				]);
+			}
+
+			// Save metadata to product_store_metadata table if shopping location is provided
+			if ($shoppingLocationId && (!empty($aisle) || !empty($shelf) || !empty($department) || !empty($price)))
+			{
+				$metadataData = [
+					'product_id' => $productId,
+					'shopping_location_id' => $shoppingLocationId
+				];
+
+				if (!empty($aisle))
+				{
+					$metadataData['aisle'] = $aisle;
+				}
+
+				if (!empty($shelf))
+				{
+					$metadataData['shelf'] = $shelf;
+				}
+
+				if (!empty($department))
+				{
+					$metadataData['department'] = $department;
+				}
+
+				if (!empty($price))
+				{
+					$metadataData['price'] = $price;
+				}
+
+				// Check if metadata already exists for this product/location
+				$existingMetadata = $this->getDatabase()->product_store_metadata()
+					->where('product_id = :1', $productId)
+					->where('shopping_location_id = :2', $shoppingLocationId)
+					->fetch();
+
+				if ($existingMetadata)
+				{
+					$existingMetadata->update($metadataData);
+				}
+				else
+				{
+					$this->getDatabase()->product_store_metadata()->insert($metadataData);
+				}
 			}
 
 			// Download and save product image if URL is provided

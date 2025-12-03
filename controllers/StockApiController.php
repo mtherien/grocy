@@ -4,6 +4,7 @@ namespace Grocy\Controllers;
 
 use Grocy\Controllers\Users\User;
 use Grocy\Services\StockService;
+use Grocy\Services\StoreIntegrationsService;
 use Grocy\Helpers\WebhookRunner;
 use Grocy\Helpers\Grocycode;
 use Psr\Http\Message\ResponseInterface as Response;

@@ -17,8 +17,11 @@ $(document).ready(function() {
 	// Location selector change
 	$('#shop-location-selector').on('change', function() {
 		var locationId = $(this).val();
-		if (locationId) {
-			Grocy.ShopMode.locationId = parseInt(locationId);
+		var newLocationId = parseInt(locationId);
+
+		// Only reload if location actually changed
+		if (newLocationId && newLocationId !== Grocy.ShopMode.locationId) {
+			Grocy.ShopMode.locationId = newLocationId;
 			loadShopItems();
 		}
 	});
@@ -121,9 +124,20 @@ function loadShopItems() {
 }
 
 function renderAisleGroup(group) {
-	var headerText = group.department ?
-		group.department + ' - ' + __t('Aisle') + ' ' + group.aisle :
-		__t('Aisle') + ' ' + group.aisle;
+	// Smart header formatting: ignore department if it contains "Aisle" (it's often wrong)
+	var headerText;
+	if (group.department) {
+		var deptUpper = group.department.toUpperCase();
+		if (deptUpper.includes('AISLE')) {
+			// Department contains "AISLE" which is often incorrect, just use the actual aisle
+			headerText = __t('Aisle') + ' ' + group.aisle;
+		} else {
+			// Valid department (like "DAIRY"), add aisle info
+			headerText = group.department + ' - ' + __t('Aisle') + ' ' + group.aisle;
+		}
+	} else {
+		headerText = __t('Aisle') + ' ' + group.aisle;
+	}
 
 	var html = '<div class="aisle-group">';
 	html += '<div class="aisle-header">' + escapeHtml(headerText) + '</div>';
@@ -158,7 +172,7 @@ function renderShopItem(item) {
 
 	var imageHtml = '';
 	if (item.picture_file_name) {
-		imageHtml = '<img src="' + U('/api/files/productpictures/' + encodeURIComponent(item.picture_file_name)) + '" class="shop-item-image" alt="' + escapeHtml(item.product_name) + '">';
+		imageHtml = '<img src="' + U('/api/files/productpictures/' + btoa(item.picture_file_name) + '?force_serve_as=picture&best_fit_width=80&best_fit_height=80') + '" class="shop-item-image" alt="' + escapeHtml(item.product_name) + '">';
 	} else {
 		imageHtml = '<div class="shop-item-image-placeholder"><i class="fa-solid fa-image"></i></div>';
 	}
@@ -337,7 +351,7 @@ function showScanConfirmationModal(product) {
 	$('#scan-quantity').text(1);
 
 	if (product.picture_file_name) {
-		$('#scan-result-image').attr('src', U('/api/files/productpictures/' + encodeURIComponent(product.picture_file_name))).show();
+		$('#scan-result-image').attr('src', U('/api/files/productpictures/' + btoa(product.picture_file_name) + '?force_serve_as=picture&best_fit_width=200&best_fit_height=200')).show();
 	} else {
 		$('#scan-result-image').hide();
 	}
@@ -385,7 +399,26 @@ function refreshMetadata() {
 			$btn.find('i').removeClass('fa-spin');
 
 			var summary = result.metadata_results;
-			toastr.success(__t('Metadata refreshed') + ': ' + summary.succeeded + '/' + summary.total + ' ' + __t('items'));
+			var message = '';
+
+			if (summary.succeeded > 0) {
+				message = summary.succeeded + ' ' + __t('items fetched');
+			}
+
+			if (summary.skipped > 0) {
+				if (message) message += ', ';
+				message += summary.skipped + ' ' + __t('already had data');
+			}
+
+			if (summary.failed > 0) {
+				if (message) message += ', ';
+				message += summary.failed + ' ' + __t('not found');
+				toastr.warning(__t('Metadata refreshed') + ': ' + message);
+			} else if (summary.succeeded > 0 || summary.skipped > 0) {
+				toastr.success(__t('Metadata refreshed') + ': ' + message);
+			} else {
+				toastr.info(__t('All items already have metadata'));
+			}
 
 			// Reload items
 			loadShopItems();
@@ -422,7 +455,7 @@ function openBulkInventoryModal() {
 		html += '<div class="d-flex align-items-center">';
 
 		if (item.picture_file_name) {
-			html += '<img src="' + U('/api/files/productpictures/' + encodeURIComponent(item.picture_file_name)) + '" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px; margin-right: 10px;">';
+			html += '<img src="' + U('/api/files/productpictures/' + btoa(item.picture_file_name) + '?force_serve_as=picture&best_fit_width=80&best_fit_height=80') + '" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px; margin-right: 10px;">';
 		}
 
 		html += '<div>';
