@@ -1165,7 +1165,7 @@ class StockApiController extends BaseApiController
 		}
 	}
 
-	private function getStoreIntegrationsService()
+	protected function getStoreIntegrationsService()
 	{
 		return StoreIntegrationsService::getInstance();
 	}

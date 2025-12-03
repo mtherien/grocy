@@ -180,42 +180,6 @@ class StoreIntegrationsService extends BaseService
 			->fetch();
 	}
 
-	/**
-	 * Save product metadata for a shopping location
-	 *
-	 * @param int $productId
-	 * @param int $shoppingLocationId
-	 * @param array $metadata
-	 */
-	public function SaveProductMetadata($productId, $shoppingLocationId, $metadata)
-	{
-		$existing = $this->GetProductMetadataForLocation($productId, $shoppingLocationId);
-
-		$data = [
-			'product_id' => $productId,
-			'shopping_location_id' => $shoppingLocationId,
-			'external_product_id' => $metadata['external_product_id'] ?? null,
-			'aisle' => $metadata['aisle'] ?? null,
-			'shelf' => $metadata['shelf'] ?? null,
-			'department' => $metadata['department'] ?? null,
-			'category' => $metadata['category'] ?? null,
-			'price' => $metadata['price'] ?? null,
-			'price_unit' => $metadata['price_unit'] ?? null,
-			'availability' => $metadata['availability'] ?? null,
-			'metadata_json' => json_encode($metadata['raw_data'] ?? []),
-			'last_updated' => date('Y-m-d H:i:s')
-		];
-
-		if ($existing)
-		{
-			$existing->update($data);
-		}
-		else
-		{
-			$this->getDatabase()->product_store_metadata()->insert($data);
-		}
-	}
-
 	public function SearchStoreLocations($integrationId, $zipCode = null, $lat = null, $lon = null)
 	{
 		$integration = $this->GetById($integrationId);
@@ -428,9 +392,12 @@ class StoreIntegrationsService extends BaseService
 		$results = $storeService->SearchProducts($integrationId, $searchTerm, $externalLocationId);
 
 		// Add shopping_location_id to each result
-		foreach ($results as &$result)
+		if (is_array($results))
 		{
-			$result['shopping_location_id'] = $shoppingLocationId;
+			foreach ($results as &$result)
+			{
+				$result['shopping_location_id'] = $shoppingLocationId;
+			}
 		}
 
 		return $results;

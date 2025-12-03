@@ -731,7 +731,7 @@ $('#store-search-button').on('click', function()
 
 	if (locationId)
 	{
-		requestData.location_id = locationId;
+		requestData.shopping_location_id = locationId;
 	}
 
 	Grocy.Api.Post('store-integrations/' + integrationId + '/products/search', requestData,

@@ -2695,3 +2695,9 @@ msgstr ""
 
 msgid "Store added successfully"
 msgstr ""
+
+msgid "Add To Cart"
+msgstr ""
+
+msgid "Shop List"
+msgstr ""
