@@ -167,19 +167,25 @@ function loadShopItems() {
 }
 
 function renderAisleGroup(group) {
+	// Strip "AISLE" prefix from aisle number if present (safety check)
+	var aisleNumber = group.aisle;
+	if (aisleNumber && typeof aisleNumber === 'string') {
+		aisleNumber = aisleNumber.replace(/^AISLE\s*/i, '');
+	}
+
 	// Smart header formatting: ignore department if it contains "Aisle" (it's often wrong)
 	var headerText;
 	if (group.department) {
 		var deptUpper = group.department.toUpperCase();
 		if (deptUpper.includes('AISLE')) {
 			// Department contains "AISLE" which is often incorrect, just use the actual aisle
-			headerText = __t('Aisle') + ' ' + group.aisle;
+			headerText = __t('Aisle') + ' ' + aisleNumber;
 		} else {
 			// Valid department (like "DAIRY"), add aisle info
-			headerText = group.department + ' - ' + __t('Aisle') + ' ' + group.aisle;
+			headerText = group.department + ' - ' + __t('Aisle') + ' ' + aisleNumber;
 		}
 	} else {
-		headerText = __t('Aisle') + ' ' + group.aisle;
+		headerText = __t('Aisle') + ' ' + aisleNumber;
 	}
 
 	var html = '<div class="aisle-group">';

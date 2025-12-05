@@ -2782,3 +2782,12 @@ msgstr ""
 
 msgid "Item added to list"
 msgstr ""
+
+msgid "Error adding to inventory"
+msgstr ""
+
+msgid "Shop Mode"
+msgstr ""
+
+msgid "Back to shopping list"
+msgstr ""

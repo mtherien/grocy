@@ -858,9 +858,14 @@ class StoreIntegrationsService extends BaseService
 			->where('shopping_location_id = :2', $shoppingLocationId)
 			->fetch();
 
+		// Get the store_integration_id from the shopping location
+		$location = $this->getDatabase()->shopping_locations()->where('id = :1', $shoppingLocationId)->fetch();
+		$storeIntegrationId = $location ? $location->store_integration_id : null;
+
 		$data = [
 			'product_id' => $productId,
 			'shopping_location_id' => $shoppingLocationId,
+			'store_integration_id_old' => $storeIntegrationId,
 			'external_product_id' => $metadata['external_product_id'] ?? null,
 			'aisle' => $metadata['aisle'] ?? null,
 			'shelf' => $metadata['shelf'] ?? null,
@@ -987,8 +992,15 @@ class StoreIntegrationsService extends BaseService
 		$extension = pathinfo(parse_url($imageUrl, PHP_URL_PATH), PATHINFO_EXTENSION) ?: 'jpg';
 		$filename = uniqid('product_') . '.' . $extension;
 
+		// Ensure productpictures directory exists
+		$picturesDir = GROCY_DATAPATH . '/productpictures';
+		if (!is_dir($picturesDir))
+		{
+			mkdir($picturesDir, 0755, true);
+		}
+
 		// Save to the productpictures directory
-		$filePath = GROCY_DATAPATH . '/productpictures/' . $filename;
+		$filePath = $picturesDir . '/' . $filename;
 		file_put_contents($filePath, $imageContent);
 
 		// Update the product with the image filename

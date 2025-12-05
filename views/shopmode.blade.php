@@ -1,19 +1,16 @@
 @php require_frontend_packages(['animatecss']); @endphp
 
-@extends('layout.default')
+@extends('layout.fullscreen')
 
-@section('title', $__t('Shop List') . ' - ' . $shoppingList->name)
+@section('title', $__t('Shop Mode') . ' - ' . $shoppingList->name)
 
 @push('pageStyles')
 <style>
-/* Shop Mode Mobile-Optimized Styles */
-body {
-	padding-bottom: 80px; /* Space for fixed action bar */
-}
+/* Shop Mode Fullscreen Styles */
 
-/* Store Selector */
+/* Store Selector & Header */
 .shop-store-selector {
-	position: sticky;
+	position: sticky; /* Also acts as relative for absolute positioned children */
 	top: 0;
 	z-index: 100;
 	background: white;
@@ -22,8 +19,28 @@ body {
 	box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
+.shop-back-button {
+	position: absolute;
+	left: 15px;
+	top: 50%;
+	transform: translateY(-50%);
+	font-size: 24px;
+	color: #333;
+	text-decoration: none;
+	z-index: 101;
+	width: 40px;
+	height: 40px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.shop-back-button:hover {
+	color: #667eea;
+}
+
 .shop-store-selector select {
-	font-size: 18px;
+	font-size: 16px;
 	height: 50px;
 }
 
@@ -36,6 +53,7 @@ body {
 /* Main Content Area */
 .shop-items-container {
 	padding: 10px;
+	padding-bottom: 100px; /* Extra space for fixed action bar */
 	max-width: 600px;
 	margin: 0 auto;
 }
@@ -43,7 +61,7 @@ body {
 /* Aisle Headers - Sticky */
 .aisle-header {
 	position: sticky;
-	top: 81px; /* Below store selector */
+	top: 81px; /* Below store selector (15px padding + 50px select + 16px = ~81px) */
 	z-index: 50;
 	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 	color: white;
@@ -334,6 +352,25 @@ body {
 		max-width: 800px;
 	}
 }
+
+/* Night mode support */
+.night-mode .shop-store-selector {
+	background: #1a1a1a;
+	border-bottom-color: #333;
+}
+
+.night-mode .shop-back-button {
+	color: #fff;
+}
+
+.night-mode .shop-back-button:hover {
+	color: #667eea;
+}
+
+.night-mode .shop-action-bar {
+	background: #1a1a1a;
+	border-top-color: #333;
+}
 </style>
 @endpush
 
@@ -347,8 +384,12 @@ body {
 	<div class="col">
 		<!-- Store Selector (Sticky Top) -->
 		<div class="shop-store-selector">
+			<a href="{{ $U('/shoppinglist?list=' . $listId) }}" class="shop-back-button" title="{{ $__t('Back to shopping list') }}">
+				<i class="fa-solid fa-arrow-left"></i>
+			</a>
 			<div class="row align-items-center">
-				<div class="col-9">
+				<div class="col-1"></div>
+				<div class="col-8">
 					<select id="shop-location-selector" class="form-control">
 						<option value="">{{ $__t('Select Store') }}</option>
 						@foreach($integratedLocations as $location)
@@ -494,12 +535,15 @@ body {
 	</div>
 </div>
 
+@endsection
+
+@push('pageScripts')
 <script>
 // Pass data from PHP to JavaScript
 Grocy.ShopMode = {
 	listId: {{ $listId }},
 	locationId: {{ $selectedLocationId ?? 'null' }},
-	integratedLocations: {!! json_encode($integratedLocations->fetchAll()) !!}
+	integratedLocations: @json($integratedLocations->fetchAll())
 };
 </script>
-@endsection
+@endpush

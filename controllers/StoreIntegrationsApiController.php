@@ -301,9 +301,14 @@ class StoreIntegrationsApiController extends BaseApiController
 				// Save/update metadata to product_store_metadata table if shopping location is provided
 				if ($shoppingLocationId && (!empty($aisle) || !empty($shelf) || !empty($department) || !empty($price)))
 				{
+					// Get the store_integration_id from the shopping location
+					$location = $this->getDatabase()->shopping_locations()->where('id = :1', $shoppingLocationId)->fetch();
+					$storeIntegrationId = $location ? $location->store_integration_id : null;
+
 					$metadataData = [
 						'product_id' => $existingProduct->id,
-						'shopping_location_id' => $shoppingLocationId
+						'shopping_location_id' => $shoppingLocationId,
+						'store_integration_id_old' => $storeIntegrationId
 					];
 
 					if (!empty($aisle))
@@ -418,9 +423,14 @@ class StoreIntegrationsApiController extends BaseApiController
 			// Save metadata to product_store_metadata table if shopping location is provided
 			if ($shoppingLocationId && (!empty($aisle) || !empty($shelf) || !empty($department) || !empty($price)))
 			{
+				// Get the store_integration_id from the shopping location
+				$location = $this->getDatabase()->shopping_locations()->where('id = :1', $shoppingLocationId)->fetch();
+				$storeIntegrationId = $location ? $location->store_integration_id : null;
+
 				$metadataData = [
 					'product_id' => $productId,
-					'shopping_location_id' => $shoppingLocationId
+					'shopping_location_id' => $shoppingLocationId,
+					'store_integration_id_old' => $storeIntegrationId
 				];
 
 				if (!empty($aisle))
