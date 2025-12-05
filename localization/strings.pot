@@ -2701,3 +2701,75 @@ msgstr ""
 
 msgid "Shop List"
 msgstr ""
+
+msgid "Select Store"
+msgstr ""
+
+msgid "Fetching store data"
+msgstr ""
+
+msgid "Error starting shop mode"
+msgstr ""
+
+msgid "Some items not found in store"
+msgstr ""
+
+msgid "Refresh store data"
+msgstr ""
+
+msgid "Loading"
+msgstr ""
+
+msgid "Loading items"
+msgstr ""
+
+msgid "No items on list"
+msgstr ""
+
+msgid "Add items to your shopping list to start shopping"
+msgstr ""
+
+msgid "Go to Shopping List"
+msgstr ""
+
+msgid "items"
+msgstr ""
+
+msgid "Send to Inventory"
+msgstr ""
+
+msgid "Add to List?"
+msgstr ""
+
+msgid "Add to List"
+msgstr ""
+
+msgid "Items to add"
+msgstr ""
+
+msgid "Add to Inventory"
+msgstr ""
+
+msgid "Not In Store"
+msgstr ""
+
+msgid "Metadata refreshed"
+msgstr ""
+
+msgid "not found"
+msgstr ""
+
+msgid "Store data loaded"
+msgstr ""
+
+msgid "items fetched"
+msgstr ""
+
+msgid "Aisle"
+msgstr ""
+
+msgid "Shelf"
+msgstr ""
+
+msgid "already had data"
+msgstr ""

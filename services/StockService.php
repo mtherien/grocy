@@ -1878,15 +1878,23 @@ class StockService extends BaseService
 				$itemData['department'] = $metadata->department;
 				$itemData['price'] = $metadata->price;
 
-				// Group by department and aisle
-				$groupKey = $metadata->department . ' - Aisle ' . $metadata->aisle;
+				// Group by aisle only (not department)
+				$groupKey = $metadata->aisle;
 				if (!isset($inStore[$groupKey]))
 				{
 					$inStore[$groupKey] = [
-						'department' => $metadata->department,
+						'department' => $metadata->department, // Use first department seen for this aisle
 						'aisle' => $metadata->aisle,
 						'items' => []
 					];
+				}
+				else
+				{
+					// If this aisle group exists but doesn't have a department, use this one
+					if (empty($inStore[$groupKey]['department']) && !empty($metadata->department))
+					{
+						$inStore[$groupKey]['department'] = $metadata->department;
+					}
 				}
 				$inStore[$groupKey]['items'][] = $itemData;
 			}
@@ -1899,20 +1907,15 @@ class StockService extends BaseService
 
 		// Sort in-store groups by aisle (numerical then alphabetical)
 		uksort($inStore, function ($a, $b) {
-			preg_match('/Aisle (\d+|[A-Z]+)/', $a, $matchesA);
-			preg_match('/Aisle (\d+|[A-Z]+)/', $b, $matchesB);
-
-			$aisleA = $matchesA[1] ?? $a;
-			$aisleB = $matchesB[1] ?? $b;
-
+			// Keys are now just aisle numbers/codes
 			// Try numerical comparison first
-			if (is_numeric($aisleA) && is_numeric($aisleB))
+			if (is_numeric($a) && is_numeric($b))
 			{
-				return (int)$aisleA - (int)$aisleB;
+				return (int)$a - (int)$b;
 			}
 
 			// Fall back to alphabetical
-			return strcmp($aisleA, $aisleB);
+			return strcmp($a, $b);
 		});
 
 		return [

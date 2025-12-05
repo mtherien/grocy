@@ -1,23 +1,26 @@
 /* Shop Mode JavaScript */
 
 $(document).ready(function() {
+	// Prevent duplicate initialization
+	if (Grocy.ShopMode.initialized) {
+		console.log('Shop mode already initialized, skipping duplicate ready handler');
+		return;
+	}
+	Grocy.ShopMode.initialized = true;
+
 	// Initialize shop mode
 	Grocy.ShopMode.items = {};
 	Grocy.ShopMode.checkedCount = 0;
 	Grocy.ShopMode.scanQuantity = 1;
 	Grocy.ShopMode.scannedProduct = null;
+	Grocy.ShopMode.isLoading = false;
 
-	// Load items if location is already selected
-	if (Grocy.ShopMode.locationId) {
-		loadShopItems();
-	} else {
-		showEmptyState(__t('Please select a store to begin shopping'));
-	}
-
-	// Location selector change
+	// Location selector change (bind BEFORE initial load to prevent race conditions)
 	$('#shop-location-selector').on('change', function() {
 		var locationId = $(this).val();
 		var newLocationId = parseInt(locationId);
+
+		console.log('Location selector changed:', {old: Grocy.ShopMode.locationId, new: newLocationId});
 
 		// Only reload if location actually changed
 		if (newLocationId && newLocationId !== Grocy.ShopMode.locationId) {
@@ -25,6 +28,14 @@ $(document).ready(function() {
 			loadShopItems();
 		}
 	});
+
+	// Load items if location is already selected
+	if (Grocy.ShopMode.locationId) {
+		console.log('Initial load with locationId:', Grocy.ShopMode.locationId);
+		loadShopItems();
+	} else {
+		showEmptyState(__t('Please select a store to begin shopping'));
+	}
 
 	// Refresh metadata button
 	$('#refresh-metadata-btn').on('click', function() {
@@ -79,20 +90,33 @@ $(document).ready(function() {
 });
 
 function loadShopItems() {
+	console.log('loadShopItems called', {locationId: Grocy.ShopMode.locationId, isLoading: Grocy.ShopMode.isLoading});
+
 	if (!Grocy.ShopMode.locationId) {
 		showEmptyState(__t('Please select a store'));
 		return;
 	}
 
+	// Prevent concurrent loads
+	if (Grocy.ShopMode.isLoading) {
+		console.log('loadShopItems: Already loading, skipping duplicate call');
+		return;
+	}
+
+	Grocy.ShopMode.isLoading = true;
+	console.log('loadShopItems: Starting API call');
+
 	// Show loading
 	$('#shop-loading').removeClass('d-none');
 	$('#shop-empty-state').addClass('d-none');
-	$('#shop-items-container').children('.aisle-group, .not-in-store-group').remove();
+	// Remove ALL existing item groups to prevent duplicates
+	$('.aisle-group, .not-in-store-group').remove();
 
 	// Call API
 	Grocy.Api.Get('shopping-list/' + Grocy.ShopMode.listId + '/shop-mode/items?location_id=' + Grocy.ShopMode.locationId,
 		function(result) {
 			Grocy.ShopMode.items = {};
+			Grocy.ShopMode.isLoading = false;
 
 			// Hide loading
 			$('#shop-loading').addClass('d-none');
@@ -117,6 +141,7 @@ function loadShopItems() {
 			updateCheckedCount();
 		},
 		function(xhr) {
+			Grocy.ShopMode.isLoading = false;
 			$('#shop-loading').addClass('d-none');
 			toastr.error(__t('Error loading items') + ': ' + xhr.responseText);
 		}
