@@ -67,10 +67,17 @@ body {
 	padding: 15px;
 	margin-bottom: 12px;
 	display: flex;
+	flex-wrap: wrap;
 	align-items: center;
 	gap: 12px;
 	box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 	transition: all 0.2s ease;
+}
+
+@media (min-width: 500px) {
+	.shop-item-card {
+		flex-wrap: nowrap;
+	}
 }
 
 .shop-item-card.done {
@@ -93,37 +100,66 @@ body {
 
 /* Product Image */
 .shop-item-image {
-	width: 60px;
-	height: 60px;
+	width: 50px;
+	height: 50px;
 	object-fit: cover;
 	border-radius: 8px;
 	flex-shrink: 0;
 }
 
 .shop-item-image-placeholder {
-	width: 60px;
-	height: 60px;
+	width: 50px;
+	height: 50px;
 	background: #e9ecef;
 	border-radius: 8px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	font-size: 30px;
+	font-size: 24px;
 	color: #6c757d;
 	flex-shrink: 0;
 }
 
+@media (min-width: 400px) {
+	.shop-item-image {
+		width: 60px;
+		height: 60px;
+	}
+
+	.shop-item-image-placeholder {
+		width: 60px;
+		height: 60px;
+		font-size: 30px;
+	}
+}
+
 /* Item Details */
 .shop-item-details {
-	flex: 1;
+	flex: 1 1 100%;
 	min-width: 0;
+	order: 10;
+}
+
+@media (min-width: 500px) {
+	.shop-item-details {
+		flex: 1 1 auto;
+		order: 0;
+	}
 }
 
 .shop-item-name {
-	font-size: 18px;
+	font-size: 16px;
 	font-weight: 600;
 	margin-bottom: 4px;
 	word-wrap: break-word;
+	overflow-wrap: break-word;
+	line-height: 1.4;
+}
+
+@media (min-width: 400px) {
+	.shop-item-name {
+		font-size: 18px;
+	}
 }
 
 .shop-item-location {
@@ -137,28 +173,48 @@ body {
 	font-weight: 600;
 }
 
-/* Quantity Controls - 44x44px buttons */
+/* Quantity Controls - Responsive buttons */
 .shop-quantity-controls {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: 6px;
 	flex-shrink: 0;
+	margin-left: auto;
+}
+
+@media (min-width: 500px) {
+	.shop-quantity-controls {
+		margin-left: 0;
+	}
 }
 
 .shop-quantity-btn {
-	width: 44px;
-	height: 44px;
-	min-width: 44px;
+	width: 36px;
+	height: 36px;
+	min-width: 36px;
 	border: 2px solid #dee2e6;
 	background: white;
 	border-radius: 8px;
-	font-size: 24px;
+	font-size: 20px;
 	font-weight: bold;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	cursor: pointer;
 	transition: all 0.2s ease;
+}
+
+@media (min-width: 400px) {
+	.shop-quantity-controls {
+		gap: 8px;
+	}
+
+	.shop-quantity-btn {
+		width: 44px;
+		height: 44px;
+		min-width: 44px;
+		font-size: 24px;
+	}
 }
 
 .shop-quantity-btn:hover {
@@ -171,10 +227,17 @@ body {
 }
 
 .shop-quantity-display {
-	font-size: 20px;
+	font-size: 16px;
 	font-weight: bold;
-	min-width: 40px;
+	min-width: 30px;
 	text-align: center;
+}
+
+@media (min-width: 400px) {
+	.shop-quantity-display {
+		font-size: 20px;
+		min-width: 40px;
+	}
 }
 
 /* Floating Action Button (Scanner) - 64x64px */
