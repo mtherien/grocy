@@ -44,7 +44,25 @@ $(document).ready(function() {
 
 	// Scanner FAB button
 	$('#scan-button-fab').on('click', function() {
-		$('.barcodescanner-input').first().trigger('click');
+		console.log('Camera FAB clicked');
+
+		// Check how many scanner buttons exist
+		var scannerButtons = $('#camerabarcodescanner-start-button');
+		console.log('Scanner buttons found:', scannerButtons.length);
+
+		if (scannerButtons.length > 1) {
+			console.warn('Multiple scanner buttons detected - removing duplicates');
+			// Keep only the first one, remove the rest
+			scannerButtons.not(':first').remove();
+		}
+
+		var scannerButton = $('#camerabarcodescanner-start-button').first();
+		if (scannerButton.length > 0) {
+			scannerButton.trigger('click');
+		} else {
+			console.error('Scanner button not found - component may not have initialized');
+			toastr.error(__t('Camera scanner not initialized. Please refresh the page.'));
+		}
 	});
 
 	// Barcode scan event
@@ -334,9 +352,13 @@ function updateCheckedCount() {
 
 function handleBarcodeScan(barcode) {
 	// Call API to handle scan
-	Grocy.Api.Post('shopping-list/' + Grocy.ShopMode.listId + '/shop-mode/scan', {barcode: barcode},
+	Grocy.Api.Post('shopping-list/' + Grocy.ShopMode.listId + '/shop-mode/scan', {
+		barcode: barcode,
+		shopping_location_id: Grocy.ShopMode.locationId
+	},
 		function(result) {
-			if (!result.found) {
+			// Check if product was found (either had 'found: true' or has a 'product' object)
+			if (result.found === false || (!result.product && !result.item)) {
 				// Barcode not recognized
 				toastr.error(__t('Product not found'));
 				return;

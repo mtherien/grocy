@@ -72,6 +72,8 @@ Grocy.Components.CameraBarcodeScanner.CheckCapabilities = async function()
 
 Grocy.Components.CameraBarcodeScanner.StartScanning = function()
 {
+	console.log('Starting barcode scanner...');
+
 	Grocy.Components.CameraBarcodeScanner.Scanner.decodeFromVideoDevice(
 		window.localStorage.getItem('cameraId'),
 		document.querySelector("#camerabarcodescanner-livestream"),
@@ -79,9 +81,14 @@ Grocy.Components.CameraBarcodeScanner.StartScanning = function()
 		{
 			if (error)
 			{
+				// Log scanning errors for debugging (but don't show to user as it's continuous)
+				if (error.name !== 'NotFoundException') {
+					console.log('Scan error:', error.name, error.message);
+				}
 				return;
 			}
 
+			console.log('Barcode detected:', result.getText());
 			Grocy.Components.CameraBarcodeScanner.StopScanning();
 
 			$(document).trigger("Grocy.BarcodeScanned", [result.getText(), Grocy.Components.CameraBarcodeScanner.CurrentTarget]);
@@ -133,6 +140,10 @@ Grocy.Components.CameraBarcodeScanner.TorchToggle = function(track)
 					torch: Grocy.Components.CameraBarcodeScanner.TorchIsOn
 				}
 			]
+		}).catch(function(error) {
+			// Camera doesn't support torch/flashlight - silently ignore
+			console.log('Torch not supported on this camera:', error.message);
+			Grocy.Components.CameraBarcodeScanner.TorchIsOn = !Grocy.Components.CameraBarcodeScanner.TorchIsOn;
 		});
 	}
 }
@@ -140,6 +151,9 @@ Grocy.Components.CameraBarcodeScanner.TorchToggle = function(track)
 $(document).on("click", "#camerabarcodescanner-start-button", async function(e)
 {
 	e.preventDefault();
+	e.stopImmediatePropagation(); // Prevent duplicate handlers
+
+	console.log('Scanner button clicked, opening modal...');
 
 	var inputElement = $(e.currentTarget).prev();
 	if (inputElement.hasAttr("disabled"))

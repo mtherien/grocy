@@ -1033,13 +1033,45 @@ class StockApiController extends BaseApiController
 			$barcode = $requestBody['barcode'];
 
 			// Resolve barcode to product
+			$productId = null;
 			try
 			{
 				$productId = $this->getStockService()->GetProductIdFromBarcode($barcode);
 			}
 			catch (\Exception $ex)
 			{
-				// Barcode not found
+				// Barcode not found in Grocy - try store integration lookup
+				$shoppingLocationId = $requestBody['shopping_location_id'] ?? null;
+
+				if ($shoppingLocationId)
+				{
+					try
+					{
+						$productId = $this->getStoreIntegrationsService()->LookupAndCreateProductFromBarcode($barcode, intval($shoppingLocationId));
+					}
+					catch (\Exception $lookupEx)
+					{
+						// Not found in store integration either
+						return $this->ApiResponse($response, [
+							'found' => false,
+							'barcode' => $barcode,
+							'message' => 'Product not found in Grocy or store integration'
+						]);
+					}
+				}
+				else
+				{
+					// No shopping location provided - can't lookup from store
+					return $this->ApiResponse($response, [
+						'found' => false,
+						'barcode' => $barcode,
+						'message' => 'Product not found in Grocy'
+					]);
+				}
+			}
+
+			if (!$productId)
+			{
 				return $this->ApiResponse($response, [
 					'found' => false,
 					'barcode' => $barcode

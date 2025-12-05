@@ -409,6 +409,9 @@ body {
 	</div>
 </div>
 
+<!-- Barcode Scanner Input (Hidden but visible to component, required for scanner) -->
+<input type="text" class="barcodescanner-input" data-target="" style="position: absolute; left: -9999px; opacity: 0;">
+
 <!-- Barcode Scanner Modal (Included Component) -->
 @include('components.camerabarcodescanner')
 

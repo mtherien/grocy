@@ -2773,3 +2773,12 @@ msgstr ""
 
 msgid "already had data"
 msgstr ""
+
+msgid "Product not found"
+msgstr ""
+
+msgid "Error scanning barcode"
+msgstr ""
+
+msgid "Item added to list"
+msgstr ""

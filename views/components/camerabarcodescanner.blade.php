@@ -21,6 +21,31 @@
 	.combobox-container #camerabarcodescanner-start-button {
 		margin-right: 38px !important;
 	}
+
+	/* Camera scanner video display */
+	#camerabarcodescanner-container {
+		width: 100%;
+		max-width: 100%;
+		overflow: hidden;
+	}
+
+	#camerabarcodescanner-livestream {
+		width: 100%;
+		max-width: 100%;
+		height: auto;
+		display: block;
+		background: #000;
+	}
+
+	.camerabarcodescanner-modal .modal-dialog {
+		max-width: 90%;
+	}
+
+	@media (min-width: 768px) {
+		.camerabarcodescanner-modal .modal-dialog {
+			max-width: 600px;
+		}
+	}
 </style>
 @endpush
 

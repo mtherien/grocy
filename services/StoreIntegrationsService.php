@@ -882,4 +882,117 @@ class StoreIntegrationsService extends BaseService
 			$this->getDatabase()->product_store_metadata()->insert($data);
 		}
 	}
+
+	public function LookupAndCreateProductFromBarcode($barcode, $shoppingLocationId)
+	{
+		error_log("LookupAndCreateProductFromBarcode called with barcode: $barcode, locationId: $shoppingLocationId");
+
+		// Get the shopping location
+		$location = $this->getDatabase()->shopping_locations()->where('id = :1', $shoppingLocationId)->fetch();
+		if (!$location)
+		{
+			error_log("Shopping location not found: $shoppingLocationId");
+			throw new \Exception('Shopping location not found');
+		}
+
+		error_log("Shopping location found. Integration ID: {$location->store_integration_id}");
+
+		// Use the same search method as the shopping list page
+		// This handles barcode normalization and API calls
+		try
+		{
+			$searchResults = $this->SearchProducts($location->store_integration_id, $barcode, $shoppingLocationId);
+			error_log("Search results: " . json_encode($searchResults));
+		}
+		catch (\Exception $ex)
+		{
+			error_log("SearchProducts failed: " . $ex->getMessage());
+			throw new \Exception('Failed to search for product: ' . $ex->getMessage());
+		}
+
+		if (empty($searchResults))
+		{
+			error_log("No search results found for barcode: $barcode");
+			throw new \Exception('Product not found in store integration');
+		}
+
+		// Use the first result
+		$storeProduct = $searchResults[0];
+		error_log("Creating product: " . $storeProduct['name']);
+
+		// Get default stock location (or use location ID 1 as fallback)
+		$defaultLocation = $this->getDatabase()->locations()->where('is_freezer', 0)->orderBy('id')->fetch();
+		$locationId = $defaultLocation ? $defaultLocation->id : 1;
+
+		// Create the product in Grocy
+		$productData = [
+			'name' => $storeProduct['name'],
+			'description' => $storeProduct['description'] ?? null,
+			'location_id' => $locationId, // Required field
+			'qu_id_purchase' => 1, // Default to "piece" quantity unit
+			'qu_id_stock' => 1
+		];
+
+		try
+		{
+			$result = $this->getDatabase()->products()->insert($productData);
+			$productId = $this->getDatabase()->lastInsertId();
+			error_log("Product created with ID: $productId (result: " . var_export($result, true) . ")");
+		}
+		catch (\Exception $ex)
+		{
+			error_log("Product insert failed: " . $ex->getMessage());
+			throw new \Exception('Failed to create product: ' . $ex->getMessage());
+		}
+
+		// Add the barcode
+		$this->getDatabase()->product_barcodes()->insert([
+			'product_id' => $productId,
+			'barcode' => $barcode
+		]);
+		error_log("Barcode added: $barcode");
+
+		// Save the store metadata
+		$this->SaveProductMetadata($productId, $shoppingLocationId, $storeProduct);
+		error_log("Metadata saved");
+
+		// If there's an image, download and save it
+		if (!empty($storeProduct['imageUrl']))
+		{
+			try
+			{
+				$this->DownloadAndSaveProductImage($productId, $storeProduct['imageUrl']);
+				error_log("Image downloaded");
+			}
+			catch (\Exception $ex)
+			{
+				error_log("Image download failed: " . $ex->getMessage());
+			}
+		}
+
+		error_log("Product creation complete. Returning product ID: $productId");
+		return $productId;
+	}
+
+	private function DownloadAndSaveProductImage($productId, $imageUrl)
+	{
+		// Download the image
+		$imageContent = file_get_contents($imageUrl);
+		if ($imageContent === false)
+		{
+			throw new \Exception('Failed to download image');
+		}
+
+		// Generate a unique filename
+		$extension = pathinfo(parse_url($imageUrl, PHP_URL_PATH), PATHINFO_EXTENSION) ?: 'jpg';
+		$filename = uniqid('product_') . '.' . $extension;
+
+		// Save to the productpictures directory
+		$filePath = GROCY_DATAPATH . '/productpictures/' . $filename;
+		file_put_contents($filePath, $imageContent);
+
+		// Update the product with the image filename
+		$product = $this->getDatabase()->products()->where('id = :1', $productId)->fetch();
+		$product->update(['picture_file_name' => $filename]);
+	}
 }
