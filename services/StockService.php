@@ -2026,7 +2026,7 @@ class StockService extends BaseService
 		}
 
 		// Generate shared transaction_id for grouping
-		$transactionId = $this->generateTransactionId();
+		$transactionId = uniqid();
 
 		$results = [];
 		$successCount = 0;
@@ -2048,13 +2048,13 @@ class StockService extends BaseService
 					$item['product_id'],
 					$amount,
 					$bestBeforeDate,
-					$transactionId,
+					StockService::TRANSACTION_TYPE_PURCHASE, // transactionType
 					$purchasedDate,
 					$price,
 					$locationId,
 					null, // shoppingLocationId
-					null, // transactionType (defaults to purchase)
-					null  // stockLabelType
+					$transactionId, // transactionId passed by reference
+					0    // stockLabelType
 				);
 
 				// Remove from shopping list

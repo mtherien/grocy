@@ -2791,3 +2791,6 @@ msgstr ""
 
 msgid "Back to shopping list"
 msgstr ""
+
+msgid "%s of %s items added to inventory"
+msgstr ""
