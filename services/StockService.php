@@ -786,6 +786,21 @@ class StockService extends BaseService
 			$defaultConsumeLocation = $this->getDatabase()->locations($product->default_consume_location_id);
 		}
 
+		// Get store metadata price from the product's default shopping location
+		$storeMetadataPrice = null;
+		if (!empty($product->shopping_location_id))
+		{
+			$storeMetadata = $this->getDatabase()->product_store_metadata()
+				->where('product_id', $productId)
+				->where('shopping_location_id', $product->shopping_location_id)
+				->fetch();
+
+			if ($storeMetadata && !empty($storeMetadata->price))
+			{
+				$storeMetadataPrice = $storeMetadata->price;
+			}
+		}
+
 		return [
 			'product' => $product,
 			'product_barcodes' => $productBarcodes,
@@ -801,6 +816,7 @@ class StockService extends BaseService
 			'default_quantity_unit_consume' => $quConsume,
 			'quantity_unit_price' => $quPrice,
 			'last_price' => $detailsRow->last_purchased_price,
+			'store_metadata_price' => $storeMetadataPrice,
 			'avg_price' => $detailsRow->average_price,
 			'oldest_price' => $detailsRow->current_price, // Deprecated
 			'current_price' => $detailsRow->current_price,

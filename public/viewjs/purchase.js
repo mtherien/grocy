@@ -312,13 +312,20 @@ if (Grocy.Components.ProductPicker !== undefined)
 						Grocy.Components.LocationPicker.SetId(productDetails.location.id);
 					}
 
-					if (productDetails.last_price == null || productDetails.last_price == 0)
+					// Prefer store metadata price (from Kroger integration) over last purchase price
+					var priceToUse = productDetails.last_price;
+					if (productDetails.store_metadata_price != null && productDetails.store_metadata_price > 0)
+					{
+						priceToUse = productDetails.store_metadata_price;
+					}
+
+					if (priceToUse == null || priceToUse == 0)
 					{
 						$("#price").val("")
 					}
 					else
 					{
-						$('#price').val((productDetails.last_price / Number.parseFloat($("#qu_id option:selected").attr("data-qu-factor"))).toFixed(Grocy.UserSettings.stock_decimal_places_prices_display));
+						$('#price').val((priceToUse / Number.parseFloat($("#qu_id option:selected").attr("data-qu-factor"))).toFixed(Grocy.UserSettings.stock_decimal_places_prices_display));
 					}
 
 					var priceTypeUnitPrice = $("#price-type-unit-price");
